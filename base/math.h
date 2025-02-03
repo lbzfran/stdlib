@@ -5,6 +5,8 @@
 # include <math.h>
 // NOTE(liam): constants
 
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wunused-variable"
 global int8  int8_min  = (int8)  0x00;
 global int16 int16_min = (int16) 0x0000;
 global int32 int32_min = (int32) 0x00000000;
@@ -243,5 +245,6 @@ Unlerp(float32 a, float32 x, float32 b)
 
     return(res);
 }
+#pragma GCC diagnostic pop
 
 #endif

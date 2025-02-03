@@ -16,11 +16,11 @@ typedef struct String {
     memory_index count;
 } String;
 
-memory_index StringConstSize(const int8* inp);
+memory_index StringConstSize(int8* inp);
 
 // push to a zero-initialized string.
-void StringPush(Arena*, String*, const int8*);
-void StringPrint(String* s);
+void StringPush(Arena*, String*, int8*);
+void StringPrint(String s);
 
 void StringClear(String);
 

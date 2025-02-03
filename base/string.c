@@ -2,7 +2,7 @@
 #include "string.h"
 
 memory_index
-StringConstSize(const int8* inp)
+StringConstSize(int8* inp)
 {
     memory_index size = 0;
 
@@ -11,7 +11,7 @@ StringConstSize(const int8* inp)
     return(size);
 }
 
-void StringPush(Arena* arena, String* s, const int8* inp)
+void StringPush(Arena* arena, String* s, int8* inp)
 {
     memory_index inputSize = StringConstSize(inp);
 
@@ -22,15 +22,18 @@ void StringPush(Arena* arena, String* s, const int8* inp)
      */
     if (!s->count)
     {
-        StringNode* first = s->first;
-        first = PushStruct(arena, StringNode);
+        StringNode* first = PushStruct(arena, StringNode);
         first->capacity = inputSize + 1;
         first->data = PushArray(arena, uint8, first->capacity);
 
         while (*(inp + first->size) != '\0') {
+            *(first->data + first->size) = *(inp + first->size);
             first->size++;
         }
-        *first->data = *inp;
+        *(first->data + first->size) = '\0';
+
+        s->first = first;
+        s->count++;
     }
     else
     {
@@ -63,14 +66,14 @@ void StringPush(Arena* arena, String* s, const int8* inp)
     }
 }
 
-void StringPrint(String* s)
+void StringPrint(String s)
 {
-    StringNode* current = s->first;
+    StringNode* current = s.first;
     while (current)
     {
-        for (memory_index i = 0; i < current->size; i++)
-        {
-            printf("%d", *current->data);
+        memory_index pos = 0;
+        while (*(current->data + pos) != '\0') {
+            printf("%c", *(current->data + pos++));
         }
         current = current->next;
     }

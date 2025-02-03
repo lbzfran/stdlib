@@ -9,8 +9,10 @@ int main(void)
     String s = {0};
 
     StringPush(&local_arena, &s, "howdy!");
-    StringPrint(&s);
-    /*String8 test_string = str8((uint8)"howdy", 6);*/
+    StringPush(&local_arena, &s, "toodooloo!");
+    StringPush(&local_arena, &s, "cowabunga!");
+
+    StringPrint(s);
 
     ArenaFree(&local_arena);
     return 0;
