@@ -72,7 +72,7 @@ PowInt32(int32 base, int32 exp)
     int32 res = 1;
     for (;;)
     {
-        if (exp & 1) { result *= base; }
+        if (exp & 1) { res *= base; }
         exp >>= 1;
         if (!exp) { break; }
         base *= base;
