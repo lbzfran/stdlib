@@ -1,6 +1,6 @@
 #include "arena.h"
 
-inline void
+void
 ArenaFillZero(memory_index size, void *ptr) // effectively memcpy
 {
     uint8* byte = (uint8*) ptr;
@@ -9,13 +9,13 @@ ArenaFillZero(memory_index size, void *ptr) // effectively memcpy
     }
 }
 
-inline void
+void
 ArenaSetMinimumBlockSize(Arena* arena, memory_index minimumBlockSize)
 {
     arena->minimumBlockSize = minimumBlockSize;
 }
 
-inline memory_index
+memory_index
 ArenaGetAlignmentOffset(Arena* arena, memory_index alignment)
 {
     memory_index alignmentOffset = 0;
@@ -30,14 +30,14 @@ ArenaGetAlignmentOffset(Arena* arena, memory_index alignment)
     return(alignmentOffset);
 }
 
-inline memory_index
+memory_index
 ArenaGetRemainingSize(Arena* arena, memory_index alignment)
 {
     memory_index res = arena->size - (arena->pos + ArenaGetAlignmentOffset(arena, alignment));
     return(res);
 }
 
-inline memory_index
+memory_index
 ArenaGetEffectiveSize(Arena* arena, memory_index sizeInit, memory_index alignment)
 {
     memory_index size = sizeInit;
@@ -48,7 +48,7 @@ ArenaGetEffectiveSize(Arena* arena, memory_index sizeInit, memory_index alignmen
     return(size);
 }
 
-inline bool32
+bool32
 ArenaCanStoreSize(Arena* arena, memory_index sizeInit, memory_index alignment)
 {
     if (!alignment) alignment = DEFAULT_ALIGNMENT;
@@ -59,7 +59,7 @@ ArenaCanStoreSize(Arena* arena, memory_index sizeInit, memory_index alignment)
     return(res);
 }
 
-inline ArenaFooter*
+ArenaFooter*
 GetFooter(Arena* arena)
 {
     ArenaFooter *res = (ArenaFooter*)(arena->base + arena->size);
@@ -67,7 +67,7 @@ GetFooter(Arena* arena)
     return(res);
 }
 
-inline void*
+void*
 ArenaPush(Arena* arena, memory_index sizeInit, memory_index alignment)
 {
     if (!alignment) alignment = DEFAULT_ALIGNMENT;
@@ -112,7 +112,7 @@ ArenaPush(Arena* arena, memory_index sizeInit, memory_index alignment)
     return(res);
 }
 
-inline void*
+void*
 ArenaCopy(memory_index size, void* src, void* dst)
 {
     uint8* srcPos = (uint8*)src;
@@ -124,7 +124,7 @@ ArenaCopy(memory_index size, void* src, void* dst)
     return(dst);
 }
 
-inline void
+void
 SubArena(Arena* subArena, Arena* arena, memory_index size, memory_index alignment)
 {
     if (!alignment) alignment = DEFAULT_ALIGNMENT;
@@ -136,7 +136,7 @@ SubArena(Arena* subArena, Arena* arena, memory_index size, memory_index alignmen
 }
 
 
-inline void
+void
 ArenaPop(Arena* arena, memory_index size)
 {
     if ((arena->size - size) > 0)
@@ -147,7 +147,7 @@ ArenaPop(Arena* arena, memory_index size)
 }
 
 // NOTE(liam): effectively resets the Arena.
-inline void
+void
 ArenaClear(Arena *arena)
 {
     while (arena->blockCount)
@@ -157,7 +157,7 @@ ArenaClear(Arena *arena)
 }
 
 // NOTE(liam): temporary memory.
-inline ArenaTemp
+ArenaTemp
 ArenaTempBegin(Arena *arena)
 {
     ArenaTemp res;
@@ -171,7 +171,7 @@ ArenaTempBegin(Arena *arena)
     return(res);
 }
 
-inline void
+void
 ArenaFreeCurrentBlock(Arena* arena)
 {
     void* freedBlock = arena->base;
@@ -188,7 +188,7 @@ ArenaFreeCurrentBlock(Arena* arena)
     arena->blockCount--;
 }
 
-inline void
+void
 ArenaTempEnd(ArenaTemp temp)
 {
     Arena* arena = temp.arena;
@@ -208,13 +208,13 @@ ArenaTempEnd(ArenaTemp temp)
 // NOTE(liam): should call after finishing temp use.
 // need to make sure all temps are accounted for before
 // resuming allocations.
-inline void
+void
 ArenaTempCheck(Arena* arena)
 {
     Assert(arena->tempCount == 0, "")
 }
 
-inline ArenaTemp
+ArenaTemp
 ArenaScratchCreate(Arena* arena)
 {
     //TODO(liam): replace assertion.

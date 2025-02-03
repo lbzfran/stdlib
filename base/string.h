@@ -1,45 +1,66 @@
 #ifndef STRING_H
 #define STRING_H
 
+// NOTE(liam): use temp buffer, ZII if possible
 #include "arena.h"
 
-// NOTE(liam): String8 is IMMUTABLE.
+typedef struct StringNode {
+    uint8* data;
+    memory_index size;
+    memory_index capacity;
+    struct StringNode* next;
+} StringNode;
 
-typedef struct String8 {
-    uint8* str;
-    uint64 size;
-} String8;
+typedef struct String {
+    StringNode* first;
+    memory_index count;
+} String;
 
-typedef struct String8Node {
-    struct String8Node* next;
-    String8 string;
-} String8Node;
+inline memory_index
+StringConstSize(const uint8* inp)
+{
+    memory_index size = 0;
 
-typedef struct String8List {
-    String8Node* first;
-    String8Node* last;
-    uint64 count;
-    uint64 size;
-} String8List;
+    while ((inp + size) != '\0') { size++; }
 
-typedef struct StringJoin {
-    String8List pre;
-    String8List mid;
-    String8List post;
-} StringJoin;
+    return(size);
+}
 
-function String8 str8(uint8* str, uint64 size);
-function String8 str8Range(uint8* first, uint8* opt);
-function String8 str8CString(uint8* cstr);
+// push to a zero-initialized string.
+void StringPush(Arena*, String, const uint8*);
 
-#define str8Literal(s) str8((uint8*)(s), sizeof(s) - 1)
+void StringClear(String);
 
-function String8 str8Prefix(String8 str, uint64 size);
-function String8 str8Chop(String8 str, uint64 amount);
-function String8 str8Postfix(String8 str, uint64 size);
-function String8 str8Skip(String8 str, uint64 amount);
-function String8 str8Substr(String8 str, uint64 first, uint64 opt);
+void StringPush(Arena* arena, String s, const uint8* inp)
+{
+    memory_index inputSize = StringConstSize(inp);
 
-#define str8Expand(s) (int)((s).size), ((s).str)
+    /*
+     * ["hell"] -> ["o world"]
+     */
+    if (!s->count)
+    {
+        StringNode first = s->first;
+        first = PushStruct(arena, StringNode);
+        first->size = inputSize;
+        first->capacity = inputSize;
+        first->data = PushArray(arena, uint8, first->capacity + 1);
+    }
+    StringNode current = s->first;
+    while (current) {
+        if (current->size + inputSize <= current->capacity)
+        {
+            // TODO(liam): insertion possible. append to current node.
+            uint32 currentPos = 0;
+            while (inputSize--)
+            {
+                *(current->data + current->size) = *(inp + currentPos++);
+                current->size++;
+            }
+            break;
+        }
+        current = current->next;
+    }
+}
 
-#endif
+#endif // STRING_H

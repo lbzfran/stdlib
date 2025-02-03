@@ -16,13 +16,14 @@
 // or define the respective functions yourself.
 /*#define ARENA_USEMALLOC*/
 
+#include "def.h"
 #include "memory.h"
 
 #define DEFAULT_ALIGNMENT sizeof(void*)
 #define DEFAULT_BLOCKSIZE Kilobytes(16)
 
-// ALIGNMENT START
-#if __STDC_VERSION__ < 201112L && (defined(__GNUC__) || defined(__TINYC__))
+// ALIGNMENT START (REQUIRES C11 ver)
+#if __STDC_VERSION__ < 201112L && (defined(COMPILER_GCC) || defined(COMPILER_TCC))
 # define _Alignas(t) __attribute__((__aligned__(t)))
 # define _Alignof(t) __alignof__(t)
 #endif
@@ -98,6 +99,5 @@ ArenaTemp ArenaScratchCreate(Arena*);
 
 #define ZeroStruct(in) ArenaFillZero(sizeof(in), &(in))
 #define ZeroArray(n, ptr) ArenaFillZero((n)*sizeof((ptr)[0]), (ptr))
-
 
 #endif //ARENA_H

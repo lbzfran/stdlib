@@ -2,6 +2,7 @@
 #define DEFINES_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 // NOTE(liam): context cracking
 // used for context-specific settings
@@ -31,6 +32,8 @@
 #  define COMPILER_CLANG 1
 # elif defined(__GNUC__)
 #  define COMPILER_GCC 1
+# elif define(__TINYC__)
+#  define COMPILER_TCC 1
 # else
 #  error "Unsupported Compiler."
 # endif
@@ -69,15 +72,15 @@
 
 # define null 0
 
-typedef unsigned char         uint8;  // unsigned char
-typedef unsigned int          uint16; // unsigned int
-typedef unsigned long int     uint32; // unsigned long int
-typedef unsigned long long    uint64; // unsigned long long int
+typedef uint8_t      uint8;  // unsigned char
+typedef uint16_t     uint16; // unsigned int
+typedef uint32_t     uint32; // unsigned long int
+typedef uint64_t     uint64; // unsigned long long int
 
-typedef signed char           int8;  // signed char
-typedef signed int            int16; // signed int
-typedef signed long int       int32; // signed long int
-typedef signed long long      int64; // signed long long int
+typedef int8_t       int8;   // signed char
+typedef int16_t      int16;  // signed int
+typedef int32_t      int32;  // signed long int
+typedef int64_t      int64;  // signed long long int
 
 typedef uint8  u8;
 typedef uint16 u16;
@@ -140,11 +143,11 @@ int ap_float(float a, float b);
 // DEBUG START
 # define ENABLE_DEBUG
 # ifdef  ENABLE_DEBUG
-#  include <stdlib.h>
-#  define Assert(c,msg) if (!(c)) { fprintf(stderr, "[*] <ASSERTION ERROR> at line %d:  %s\n", __LINE__, #msg); exit(1); }
+#  define Assert(c,msg) if (!(c)) { fprintf(stderr, "[*] <ASSERTION ERROR> at line %d:  %s\n", __LINE__, #msg); Statement(AssertBreak();); }
 // NOTE(liam): force exit program. basically code should never reach this point.
-#  define Throw(msg) { fprintf(stderr, "[*] <THROW> at line %d: %s\n", __LINE__, #msg); exit(1); }
+#  define Throw(msg) { fprintf(stderr, "[*] <THROW> at line %d: %s\n", __LINE__, #msg); Statement(AssertBreak();); }
 # else
+#  include <stdlib.h>
 #  define ASSERT(c,msg)
 #  define Throw(msg) { exit(1); }
 # endif

@@ -66,6 +66,20 @@ InfNegativeFloat64(void)
     return(r.f);
 }
 
+inline int32
+PowInt32(int32 base, int32 exp)
+{
+    int32 res = 1;
+    for (;;)
+    {
+        if (exp & 1) { result *= base; }
+        exp >>= 1;
+        if (!exp) { break; }
+        base *= base;
+    }
+    return(res);
+}
+
 inline float32
 AbsFloat32(float32 x)
 {
@@ -133,6 +147,8 @@ SqrtFloat32(float32 x)
 inline float32
 SinFloat32(float32 x)
 {
+    float32 res = 0.0f;
+
     return sinf(x);
 }
 
