@@ -1,0 +1,153 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
+#include <stdio.h>
+
+// NOTE(liam): context cracking
+// used for context-specific settings
+# if defined(_WIN32) || defined(_WIN64)
+#  define OS_WINDOWS 1
+# elif defined(__linux__) || defined(__gnu_linux__)
+#  define OS_LINUX 1
+# elif defined(__APPLE__) && defined(__MACH__)
+# error "Unsupported Operating System."
+# else
+# error "Unsupported Operating System."
+# endif
+
+# if defined(__M_AMD64) || defined(__amd64__)
+#  define ARCH_X64 1
+# elif defined(__M_I86) || defined(__i386__)
+#  define ARCH_X86 1
+# elif defined(__M_ARM) || defined(__arm__)
+#  define ARCH_ARM 1
+# elif defined(__aarch64__)
+#  define ARCH_ARM64 1
+# else
+#  error "Unsupported Architecture."
+# endif
+
+# if defined(__clang__)
+#  define COMPILER_CLANG 1
+# elif defined(__GNUC__)
+#  define COMPILER_GCC 1
+# else
+#  error "Unsupported Compiler."
+# endif
+
+# if defined(OS_WINDOWS)
+#  define CLEAR system("cls")
+# elif defined(OS_LINUX) || defined(OS_MAC)
+#  define CLEAR system("clear")
+# else
+#  define CLEAR 0
+# endif
+
+# if defined(COMPILER_CLANG)
+#  define FILE_NAME __FILE_NAME__
+# else
+#  define FILE_NAME __FILE__
+# endif
+
+// aliases
+# define global     static
+# define local      static
+# define function   static
+
+# define c_linkage_begin extern "C" {
+# define c_linkage_end  }
+# define c_linkage extern "C"
+
+// some funny redefs
+# define AND &&
+# define OR ||
+# define NOT !
+# define elif else if
+
+# define true 1
+# define false 0
+
+# define null 0
+
+typedef unsigned char         uint8;  // unsigned char
+typedef unsigned int          uint16; // unsigned int
+typedef unsigned long int     uint32; // unsigned long int
+typedef unsigned long long    uint64; // unsigned long long int
+
+typedef signed char           int8;  // signed char
+typedef signed int            int16; // signed int
+typedef signed long int       int32; // signed long int
+typedef signed long long      int64; // signed long long int
+
+typedef uint8  u8;
+typedef uint16 u16;
+typedef uint32 u32;
+typedef uint64 u64;
+
+typedef int8   i8;
+typedef int16  i16;
+typedef int32  i32;
+typedef int64  i64;
+
+typedef float       float32;
+typedef double      float64;
+typedef int32       bool32;
+typedef size_t      memory_index;
+
+typedef void VoidFunc(void);
+
+// NOTE(liam): EXPERIMENTAL: here for demo purposes
+int ap_int(int a, int b);
+int ap_float(float a, float b);
+# define OVERLOADING
+# ifdef  OVERLOADING
+#  define ap(a, b) _Generic((a),    \
+    int     :   ap_int((a), (b)),   \
+    float   :   ap_float((a), (b))  \
+)
+# endif
+
+// NOTE(liam): general macros
+# define Swap(a, b)      (((a) ^= (b)), ((b) ^= (a)), ((a) ^= (b)))
+# define Min(a, b)       ((a) < (b) ? (a) : (b))
+# define Max(a, b)       ((a) > (b) ? (a) : (b))
+# define Limit(a, x, b)  ((x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x))
+# define ClampUp(a, b)   Max(a, b)
+# define ClampDown(a, b) Min(a, b)
+
+# define ArrayCount(a) (sizeof(a)/sizeof(*(a)))
+
+# define Kilobytes(V) ((V)*1024LL)
+# define Megabytes(V) (Kilobytes(V)*1024LL)
+# define Gigabytes(V) (Megabytes(V)*1024LL)
+# define Terabytes(V) (Gigabytes(V)*1024LL)
+
+# define Statement(S) do{ S }while(0)
+
+# define StringLiteral_(S) #S
+# define StringLiteral(S) StringLiteral_(S)
+# define Glue_(A,B) A##B
+# define Glue(A,B) Glue_(A,B)
+
+# define IntFromPtr(p) (unsigned long long)((char*)p - (char*)0)
+# define PtrFromInt(n) (void*)((char*)0 + (n))
+
+// NOTE(liam): behavior of assert.
+# if !defined(AssertBreak)
+#  define AssertBreak() (*(int*)0 = 0)
+# endif
+
+// DEBUG START
+# define ENABLE_DEBUG
+# ifdef  ENABLE_DEBUG
+#  include <stdlib.h>
+#  define Assert(c,msg) if (!(c)) { fprintf(stderr, "[*] <ASSERTION ERROR> at line %d:  %s\n", __LINE__, #msg); exit(1); }
+// NOTE(liam): force exit program. basically code should never reach this point.
+#  define Throw(msg) { fprintf(stderr, "[*] <THROW> at line %d: %s\n", __LINE__, #msg); exit(1); }
+# else
+#  define ASSERT(c,msg)
+#  define Throw(msg) { exit(1); }
+# endif
+// DEBUG END
+
+#endif //DEFINES_H
