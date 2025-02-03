@@ -18,9 +18,18 @@
 
 #include "memory.h"
 
-#include <stdalign.h>
 #define DEFAULT_ALIGNMENT sizeof(void*)
 #define DEFAULT_BLOCKSIZE Kilobytes(16)
+
+// ALIGNMENT START
+#if __STDC_VERSION__ < 201112L && (defined(__GNUC__) || defined(__TINYC__))
+# define _Alignas(t) __attribute__((__aligned__(t)))
+# define _Alignof(t) __alignof__(t)
+#endif
+
+#define alignas _Alignas
+#define alignof _Alignof
+// ALIGNMENT END
 
 typedef struct memory_arena_footer {
     uint8* base;
