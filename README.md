@@ -54,18 +54,18 @@ arena.h
 
 memory.h
 
-> This is actually more of an abstraction of memory allocation in general.
-> I got the idea while making the arena about not using malloc as its backing.
-> This implementation is not exactly cross-platform, hence the split.
-> It does still allow malloc as its backing to make it more portable, if it's
-> absolutely necessary. The macro for that was a clever solution I came up with,
-> somewhat.
+> This section abstracts the platform-dependent memory allocation necessary,
+> effectively removing the need for malloc. I do leave malloc-compatible
+> implementations throughout the codebase as I see fit for portability, but
+> otherwise the memory management is done manually using this core. 
 
 random.h
 
 > This implementation was pulled from Handmade Hero around the same time as
 > the arena. I primarily used it for mock-up particle system with raylib, but
-> the implementation has been so useful on its own that I've dragged it around
-> other projects too.
+> it's been so useful on its own that I've dragged it around other projects too.
 
-> It is far from perfect, and not at the level of polish I'd like so far.
+> It uses a pre-determined random table, and seeds passed iterate over this table.
+> This allows for seemingly random but predictable outcomes, which is more than
+> enough for my use cases. I am considering ways to repopulate the table, but
+> it's good for now.
