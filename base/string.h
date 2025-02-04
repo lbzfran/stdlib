@@ -17,7 +17,7 @@ typedef char* String;
 memory_index StringLength(char* str);
 bool32 StringHasSpace(StringData* sData);
 
-String StringNew(Arena* arena, String* s, const char* str);
+String StringNew(Arena* arena, const char* str);
 StringData* StringDataAlloc(Arena* arena, memory_index length);
 inline memory_index StringLength(String str);
 

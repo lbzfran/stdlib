@@ -5,9 +5,9 @@
 #include "def.h"
 #include "arena.h"
 #include "math.h"
-/*#include "random.h"*/
+#include "random.h"
 /*#include "ds.h"*/
-#include "string.h"
+/*#include "string.h"*/
 /*#include "utf.h"*/
 /*#include "log.h"*/
 /*#include "thread.h"*/

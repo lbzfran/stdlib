@@ -24,11 +24,11 @@ StringDataAlloc(Arena* arena, memory_index length)
 }
 
 String
-StringNew(Arena* arena, String* s, const char* str)
+StringNew(Arena* arena, const char* str)
 {
     StringData* sData = NULL;
 
-    if (s)
+    if (str)
     {
         memory_index strLen = StringLength(str);
         sData = StringDataAlloc(arena, strLen);
@@ -40,5 +40,5 @@ StringNew(Arena* arena, String* s, const char* str)
         sData = StringDataAlloc(arena, 0);
         *sData->buf = '\0';
     }
-    *s = sData->buf;
+    return sData->buf;
 }

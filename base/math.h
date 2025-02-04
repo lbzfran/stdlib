@@ -1,8 +1,8 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef BASE_MATH_H
+#define BASE_MATH_H
 
 # include <stdio.h>
-# include <math.h>
+# include "def.h"
 // NOTE(liam): constants
 
 # pragma GCC diagnostic push
@@ -34,217 +34,30 @@ global float32 float32_e   = 2.71828182846f;
 global float64 float64_max = (float64) 2.220446e-16f;
 global float64 float64_pi  = 3.14159265359;
 global float64 float64_e   = 2.71828182846;
-
-// NOTE(liam): infinity
-inline float32
-InfFloat32(void)
-{
-    union{ float32 f; uint32 u; } r;
-    r.u = 0x7f800000;
-    return(r.f);
-}
-
-inline float32
-InfNegativeFloat32(void)
-{
-    union{ float32 f; uint32 u; } r;
-    r.u = 0xff800000;
-    return(r.f);
-}
-
-inline float64
-InfFloat64(void)
-{
-    union{ float64 f; uint64 u; } r;
-    r.u = 0x7ff0000000000000;
-    return(r.f);
-}
-
-inline float64
-InfNegativeFloat64(void)
-{
-    union{ float64 f; uint64 u; } r;
-    r.u = 0xfff0000000000000;
-    return(r.f);
-}
-
-inline int32
-PowInt32(int32 base, int32 exp)
-{
-    int32 res = 1;
-    for (;;)
-    {
-        if (exp & 1) { res *= base; }
-        exp >>= 1;
-        if (!exp) { break; }
-        base *= base;
-    }
-    return(res);
-}
-
-inline float32
-AbsFloat32(float32 x)
-{
-    union{ float32 f; uint32 u; } r;
-    r.f = x;
-    r.u &= 0x7fffffff;
-    return(r.f);
-}
-
-inline float32
-AbsFloat64(float32 x)
-{
-    union{ float32 f; uint32 u; } r;
-    r.f = x;
-    r.u &= 0x7fffffffffffffff;
-    return(r.f);
-}
-
-// TODO(liam): calculate these.
-inline float32
-SqrtFloat32(float32 x)
-{
-    // TODO(liam): test that this works.
-    int32 start = 0, end = x;
-    int32 mid;
-
-    float32 res;
-
-    while (start <= end)
-    {
-        mid = (start + end) / 2;
-
-        if (mid * mid == x)
-        {
-            res = mid;
-            break;
-        }
-
-        if (mid * mid < x)
-        {
-            res = start;
-
-            start = mid + 1;
-        }
-        else { end = mid - 1; }
-    }
-
-    float32 inc = 0.1f;
-    for (int8 i = 0; i < 5; i++)
-    {
-        while (res * res <= x)
-        {
-            res += inc;
-        }
-
-        res = res - inc;
-        inc = inc / 10;
-    }
-
-    return(res);
-}
-
-//TODO(liam): REPLACE THESE EVENTUALLY.
-
-inline float32
-SinFloat32(float32 x)
-{
-    float32 res = 0.0f;
-
-    return sinf(x);
-}
-
-inline float32
-CosFloat32(float32 x)
-{
-    return cosf(x);
-}
-
-inline float32
-TanFloat32(float32 x)
-{
-    return tanf(x);
-}
-
-inline float64
-SqrtFloat64(float64 x)
-{
-    // TODO(liam): test that this works.
-    int64 start = 0, end = x;
-    int64 mid;
-
-    float64 res;
-
-    while (start <= end)
-    {
-        mid = (start + end) / 2;
-
-        if (mid * mid == x)
-        {
-            res = mid;
-            break;
-        }
-
-        if (mid * mid < x)
-        {
-            res = start;
-
-            start = mid + 1;
-        }
-        else { end = mid - 1; }
-    }
-
-    float64 inc = 0.1f;
-    for (int8 i = 0; i < 5; i++)
-    {
-        while (res * res <= x)
-        {
-            res += inc;
-        }
-
-        res = res - inc;
-        inc = inc / 10;
-    }
-
-    return(res);
-}
-
-inline float64
-SinFloat64(float64 x)
-{
-    return sinf(x);
-}
-
-inline float64
-CosFloat64(float64 x)
-{
-    return cosf(x);
-}
-
-inline float64
-TanFloat64(float64 x)
-{
-    return tanf(x);
-}
-
-inline float32
-Lerp(float32 a, float32 t, float32 b)
-{
-    float32 res = a + (b - a) * t;
-
-    return(res);
-}
-inline float32
-Unlerp(float32 a, float32 x, float32 b)
-{
-    float32 res = 0.f;
-    if (a != b)
-    {
-        res = (x - a) / (b - a);
-    }
-
-    return(res);
-}
 #pragma GCC diagnostic pop
 
+// NOTE(liam): infinity
+float32 InfFloat32(void);
+float32 InfNegativeFloat32(void);
+float64 InfFloat64(void);
+float64 InfNegativeFloat64(void);
+
+int32 PowInt32(int32 base, int32 exp);
+
+float32 AbsFloat32(float32 x);
+float32 AbsFloat64(float32 x);
+
+float32 SqrtFloat32(float32 x);
+float64 SqrtFloat64(float64 x);
+
+float32 SinFloat32(float32 x);
+float32 CosFloat32(float32 x);
+float32 TanFloat32(float32 x);
+
+float64 SinFloat64(float64 x);
+float64 CosFloat64(float64 x);
+float64 TanFloat64(float64 x);
+
+float32 Lerp(float32 a, float32 t, float32 b);
+float32 Unlerp(float32 a, float32 x, float32 b);
 #endif
