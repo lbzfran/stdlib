@@ -9,10 +9,11 @@ int main(void)
     String s = {0};
 
     StringPush(&local_arena, &s, "howdy!");
-    StringPush(&local_arena, &s, "toodooloo!");
+
+    StringPush(&local_arena, &s, "boo hoo toodooloo!");
     StringPush(&local_arena, &s, "cowabunga!");
 
-    StringPrint(s);
+    StringPrint(&s);
 
     ArenaFree(&local_arena);
     return 0;

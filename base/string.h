@@ -5,7 +5,7 @@
 #include "arena.h"
 
 typedef struct StringNode {
-    uint8* data;
+    int8* data;
     memory_index size;
     memory_index capacity;
     struct StringNode* next;
@@ -16,12 +16,12 @@ typedef struct String {
     memory_index count;
 } String;
 
-memory_index StringConstSize(int8* inp);
+memory_index StringConstSize(char* inp);
 
 // push to a zero-initialized string.
-void StringPush(Arena*, String*, int8*);
-void StringPrint(String s);
+void StringPush(Arena*, String*, char*);
+void StringPrint(String* s);
 
-void StringClear(String);
+void StringClear(String*);
 
 #endif // STRING_H
