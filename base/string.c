@@ -1,94 +1,44 @@
 
 #include "string.h"
+#include <string.h>
 
-memory_index
-StringConstSize(char* inp)
+// TODO(liam): i'm not sure if this is working the way I'm expecting it to.
+
+inline memory_index
+StringLength(String str)
 {
     memory_index size = 0;
 
-    while (*(inp + size) != '\0') { size++; }
+    while (*(str + size) != '\0') { size++; }
 
     return(size);
 }
 
-void StringPush(Arena* arena, String* s, char* inp)
+StringData*
+StringDataAlloc(Arena* arena, memory_index length)
 {
-    memory_index inputSize = StringConstSize(inp);
-    printf("node check: %llu\n", s->count);
-    /*
-     * ["hel"] -> ["o world"xxxxx] + [" hehe"] =
-     * ["hel"] -> ["o world hehe"]
-     *
-     */
-    if (s->count == 0)
+    StringData* s_data = (StringData*)PushSize(arena, sizeof(struct StringData) + length + 1);
+    s_data->capacity = length + 1;
+    s_data->size = length;
+    return s_data;
+}
+
+String
+StringNew(Arena* arena, String* s, const char* str)
+{
+    StringData* sData = NULL;
+
+    if (s)
     {
-        StringNode* first = PushStruct(arena, StringNode);
-        first->capacity = Min(inputSize + 1, Kilobytes(1));
-        first->data = PushArray(arena, int8, first->capacity);
-
-        while (*(inp + first->size) != '\0') {
-            *(first->data + first->size) = *(inp + first->size);
-            first->size++;
-        }
-        *(first->data + first->size) = '\0';
-
-        s->first = first;
-        s->count++;
+        memory_index strLen = StringLength(str);
+        sData = StringDataAlloc(arena, strLen);
+        memcpy(&sData->buf, str, strLen);
+        *(sData->buf + strLen) = '\0';
     }
     else
     {
-        StringNode* current = s->first;
-        do {
-            if (!current->next)
-            {
-                if (current->size + inputSize <= current->capacity)
-                {
-                    // TODO(liam): insertion possible. append to current node.
-                    printf("can fit!\n");
-
-                    memory_index pos = 0;
-                    while (*(inp + pos) != '\0') {
-                        *(current->data + current->size++) = *(inp + pos++);
-                    }
-                    *(current->data + current->size) = '\0';
-                };
-
-                printf("last position\n");
-                StringNode* last = PushStruct(arena, StringNode);
-                last->capacity = inputSize + 1;
-                last->data = PushArray(arena, int8, last->capacity);
-
-
-                while (*(inp + last->size - 1) != '\0') {
-                    *(last->data + last->size) = *(inp + last->size);
-                    last->size++;
-                }
-                *(last->data + last->size) = '\0';
-
-                current->next = last;
-                s->count++;
-
-                break;
-            }
-            current = current->next;
-        }
-        while (current);
-
-
+        sData = StringDataAlloc(arena, 0);
+        *sData->buf = '\0';
     }
-}
-
-void StringPrint(String* s)
-{
-    StringNode* current = s->first;
-    while (current)
-    {
-        printf("current size of node: %llu\n", current->size);
-        memory_index pos = 0;
-        while (pos != current->size) {
-            printf("%c", *(current->data + pos++));
-        }
-        current = current->next;
-    }
-    printf("\n");
+    *s = sData->buf;
 }

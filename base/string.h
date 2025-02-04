@@ -4,24 +4,21 @@
 // NOTE(liam): use temp buffer, ZII if possible
 #include "arena.h"
 
-typedef struct StringNode {
-    int8* data;
-    memory_index size;
+typedef struct StringData {
+    // NOTE(liam): cap excludes header and null term.
+    // size = used.
     memory_index capacity;
-    struct StringNode* next;
-} StringNode;
+    memory_index size;
+    char buf[];
+} StringData;
 
-typedef struct String {
-    StringNode* first;
-    memory_index count;
-} String;
+typedef char* String;
 
-memory_index StringConstSize(char* inp);
+memory_index StringLength(char* str);
+bool32 StringHasSpace(StringData* sData);
 
-// push to a zero-initialized string.
-void StringPush(Arena*, String*, char*);
-void StringPrint(String* s);
-
-void StringClear(String*);
+String StringNew(Arena* arena, String* s, const char* str);
+StringData* StringDataAlloc(Arena* arena, memory_index length);
+inline memory_index StringLength(String str);
 
 #endif // STRING_H
