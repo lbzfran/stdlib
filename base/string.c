@@ -1,13 +1,16 @@
 
 #include "math.h"
 #include "string.h"
+#include <stdarg.h>
 
 void
-StringCopy(string dst, string src, memory_index size)
+MemoryCopy(void *dst, void *src, memory_index size)
 {
+    uint8* cd = (uint8*)dst;
+    uint8* cs = (uint8*)src;
     for (memory_index i = 0; i < size; i++)
     {
-        *(dst++) = *(src++);
+        *(cd++) = *(cs++);
     }
 }
 
@@ -53,6 +56,15 @@ StringNew(StringData* sd, void *str)
     string res = StringNewLen(sd, str, StringLength(str));
 
     return(res);
+}
+
+string
+StringNewRange(StringData *sd, string first, string last_optional)
+{
+    sd->buf = first;
+    sd->size = (memory_index)(last_optional - first)
+;
+    return(sd->buf);
 }
 
 // NOTE(liam): ability to get the struct of an existing 'String' datatype.
@@ -118,6 +130,154 @@ StringPrint(StringData s)
     {
         putc(*(s.buf++), stdout);
     }
-    putc('\n', stdout);
 }
 
+void
+StringListPrint(StringList l)
+{
+    for (StringNode* current = l.first;
+            current != l.last;
+            current = current->next)
+    {
+        StringPrint(current->str);
+    }
+}
+
+// NOTE(liam): being extra apparent, this function assumes user will
+// take care of allocating the node.
+void
+StringListPush_(StringList *list, StringData sd, StringNode *node_alloced)
+{
+    node_alloced->str = sd;
+
+    if (list->first == list->last)
+    {
+        // NOTE(liam): first/second value.
+        if (!list->first)
+        {
+            list->first = node_alloced;
+            list->last = node_alloced;
+        }
+        else
+        {
+            list->first->next = node_alloced;
+            list->last = node_alloced;
+        }
+    }
+    else
+    {
+        StringNode *current = list->first;
+        while (current != list->last)
+        {
+            current = current->next;
+        }
+        current->next = node_alloced;
+        list->last = current->next;
+    }
+    list->nodeCount++;
+    list->size += sd.size;
+}
+
+void
+StringListPush(Arena *arena, StringList *list, StringData sd)
+{
+    StringNode* node = PushStruct(arena, struct StringNode);
+    StringListPush_(list, sd, node);
+}
+
+StringData
+StringListJoin(Arena *arena_astmp, StringList *list, StringJoin *join_optional)
+{
+    local StringJoin join_empty = {};
+    StringJoin *join = join_optional;
+    if (!join)
+    {
+        join = &join_empty;
+    }
+
+    memory_index size = (join->pre.size +
+                        join->post.size +
+                        join->mid.size * (list->nodeCount - 1) +
+                        list->size);
+
+    ArenaTemp tmpArena = ArenaScratchCreate(arena_astmp);
+
+    string str = PushArray(arena_astmp, uint8, size + 1);
+    string ptr = str;
+
+    // NOTE(liam): pre
+    MemoryCopy(ptr, join->pre.buf, join->pre.size);
+    ptr += join->pre.size;
+
+    // NOTE(liam): mid
+    bool32 is_mid = 0;
+    for (StringNode *node = list->first;
+            node != 0;
+            node = node->next)
+    {
+        if (is_mid)
+        {
+            MemoryCopy(ptr, join->mid.buf, join->mid.size);
+            ptr += join->mid.size;
+        }
+
+        MemoryCopy(ptr, node->str.buf, node->str.size);
+        ptr += node->str.size;
+
+        is_mid = 1;
+    }
+
+    // NOTE(liam): post
+    MemoryCopy(ptr, join->post.buf, join->post.size);
+    ptr += join->post.size;
+
+    *ptr = 0;
+    StringData res = {0};
+    StringNewLen(&res, str, size);
+    ArenaScratchFree(tmpArena);
+    return(res);
+}
+
+StringList
+StringSplit(Arena *arena, StringData sd, char *splits, memory_index count)
+{
+    StringList res = {0};
+    bool32 is_split_byte = 0;
+
+    string ptr = sd.buf;
+    string word_first = ptr;
+    string optional = sd.buf + sd.size;
+    for (; ptr < optional; ptr++)
+    {
+        uint8 byte = *ptr;
+        bool32 is_split_byte = 0;
+        for (uint32 i = 0; i < count; i++)
+        {
+            if (byte == splits[i])
+            {
+                is_split_byte = 1;
+                break;
+            }
+        }
+    }
+
+    if (is_split_byte)
+    {
+        if (word_first < ptr)
+        {
+            StringData tmp = {0};
+            StringNewRange(&tmp, word_first, ptr);
+            StringListPush(arena, &res, tmp);
+        }
+        word_first = ptr + 1;
+    }
+
+    if (word_first < ptr)
+    {
+        StringData tmp = {0};
+        StringNewRange(&tmp, word_first, ptr);
+        StringListPush(arena, &res, tmp);
+    }
+
+    return(res);
+}

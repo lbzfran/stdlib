@@ -31,6 +31,27 @@ int main(void)
     StringSkipBack(&new_s, sdd, 3);
     StringPrint(new_s);
 
+    putc('\n', stdout);
+
+    StringList sll = {0};
+
+    StringListPush(&local_arena, &sll, new_s);
+    StringListPush(&local_arena, &sll, sdd);
+
+    StringListPrint(sll);
+
+    StringData sjoin = StringListJoin(&local_arena, &sll, null);
+
+
+    printf("\nsize of new string: %llu\n", sjoin.size);
+    StringPrint(sjoin);
+    putc('\n', stdout);
+
+    StringList nll = StringSplit(&local_arena, sjoin, "s", 2);
+
+    StringListPrint(nll);
+    putc('\n', stdout);
+
     printf("size of uint8 pointer + size_t: %zu\n", sizeof(memory_index) + sizeof(uint8*));
 
     ArenaFree(&local_arena);
