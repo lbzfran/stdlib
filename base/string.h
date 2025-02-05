@@ -17,7 +17,7 @@ typedef struct StringData {
 
 typedef struct StringNode {
     struct StringNode *next;
-    stringData str;
+    StringData str;
 } StringNode;
 
 typedef struct StringList {
@@ -49,14 +49,14 @@ void StringSkipBack(StringData *dst, StringData src, memory_index count);
 void StringPrint(StringData s);
 
 // NOTE(liam): list manips
-void StringListPush(StringList *list, String s, StringNode *node_alloced);
-void StringListPushArena(Arena *arena, StringList *list, String s);
+void StringListPush(StringList *list, string s, StringNode *node_alloced);
+void StringListPushArena(Arena *arena, StringList *list, string s);
 StringData StringJoin(Arena *arena);
 StringList StringSplit(Arena *arena);
 
 // NOTE(liam): fmt
-void string StringPushfv(Arena *arena, char *fmt, va_list args);
-void string StringPushf(Arena *arena, char *fmt, ...);
-void string StringListPushf(Arena *arena, StringList *list, char *fmt, ...);
+string StringPushfv(Arena *arena, char *fmt, va_list args);
+string StringPushf(Arena *arena, char *fmt, ...);
+string StringListPushf(Arena *arena, StringList *list, char *fmt, ...);
 
 #endif // STRING_H
