@@ -47,7 +47,7 @@ int main(void)
     StringPrint(sjoin);
     putc('\n', stdout);
 
-    StringList nll = StringSplit(&local_arena, sjoin, "s", 2);
+    StringList nll = StringSplit(&local_arena, sjoin, " ", 2);
 
     StringListPrint(nll);
     putc('\n', stdout);
