@@ -1,4 +1,5 @@
 
+#include "math.h"
 #include "string.h"
 
 void
@@ -38,74 +39,78 @@ CharUpper(uint8 c)
 
 /*---*/
 
-StringData *
-StringDataAlloc(Arena *arena, memory_index length)
+String
+StringNewLen(StringData* sd, void *str, memory_index size)
 {
-    StringData *sData = (StringData*)PushSize(arena, sizeof(struct StringData) + length + 1);
-    sData->capacity = length + 1;
-    sData->size = length;
-    return(sData);
+    sd->buf = (str) ? (uint8*)(str) : (uint8*)"\0";
+    sd->size = ClampDown(size, StringLength((uint8*)str));
+    /*sd->size = size;*/
+
+    return(sd->buf);
 }
 
 String
-StringNewLen(Arena *arena, void *str, memory_index size)
+StringNew(StringData* sd, void *str)
 {
-    StringData *sData = NULL;
-
-    if (str)
-    {
-        sData = StringDataAlloc(arena, size);
-        StringCopy(&sData->buf, str, size);
-        *(sData->buf + size) = '\0';
-    }
-    else
-    {
-        sData = StringDataAlloc(arena, size);
-        *sData->buf = '\0';
-    }
-    return(sData->buf);
-}
-
-String
-StringNew(Arena *arena, void *str)
-{
-    String res = StringNewLen(arena, str, StringLength(str));
+    String res = StringNewLen(sd, str, StringLength(str));
 
     return(res);
 }
 
-StringData *
-StringGetData(String s)
-{
-	StringData *res = (StringData*)&s[-sizeof(struct StringData)];
+// NOTE(liam): ability to get the struct of an existing 'String' datatype.
+// passing arguments that was not explicitly initialized as 'String' will
+// definitely segfault, and is not within intended use for this structure.
+/*StringData **/
+/*StringGetData(String s)*/
+/*{*/
+/*	StringData *res = (StringData*)&s[-sizeof(struct StringData)];*/
+/**/
+/*	return(res);*/
+/*}*/
 
-	return(res);
+void
+StringSlice(StringData *dst, StringData src, memory_index first, memory_index last)
+{
+    // NOTE(liam): clamp to prevent overflow.
+    memory_index endSizeClamped = ClampDown(last, src.size);
+    memory_index startSizeClamped = ClampDown(first, endSizeClamped);
+    StringNewLen(dst, (src.buf + endSizeClamped), endSizeClamped - startSizeClamped);
 }
 
-String
-StringSlice(Arena *arena, String s, memory_index first, memory_index last)
+// Note(liam): small visualizations. [...] = string, 0 = keep, x = remove.
+// Note(liam): [00|xxxxx]
+void
+StringPrefix(StringData *dst, StringData src, memory_index size)
 {
-    String res = StringNewLen(arena, (s + first), last);
-
-    return(res);
+    memory_index sizeClamped = ClampDown(size, src.size);
+    StringNewLen(dst, src.buf, sizeClamped);
 }
 
-String
-StringPrefix(Arena *arena, String s, memory_index last)
+// Note(liam): [xxxxx|00]
+void
+StringPostfix(StringData *dst, StringData src, memory_index size)
 {
-    String res = StringSlice(arena, s, 0, last);
-
-    return(res);
+    // NOTE(liam): forces clamp down using infinity.
+    memory_index sizeClamped = ClampDown(size, src.size);
+    memory_index startPos = src.size - sizeClamped;
+    StringNewLen(dst, (src.buf + startPos), sizeClamped);
 }
 
-String
-StringPostfix(Arena *arena, String s, memory_index first)
+// Note(liam): [xx|00000]
+void
+StringSkipFront(StringData *dst, StringData src, memory_index count)
 {
-    // TODO(liam): check this gets correct end size.
-    StringData *sData = StringGetData(s);
-    String res = StringSlice(arena, s, first, sData->size);
+    memory_index countClamped = ClampDown(count, src.size);
+    memory_index startPos = src.size - countClamped;
+    StringNewLen(dst, (src.buf + startPos), countClamped);
+}
 
-    return(res);
+// Note(liam): [00000|xx]
+void
+StringSkipBack(StringData *dst, StringData src, memory_index count)
+{
+    memory_index countClamped = ClampDown(count, src.size);
+    StringNewLen(dst, src.buf, countClamped);
 }
 
 
