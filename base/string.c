@@ -1,8 +1,16 @@
 
 #include "string.h"
-#include <string.h>
 
-// TODO(liam): i'm not sure if this is working the way I'm expecting it to.
+void
+StringCopy(void *dst, void *src, memory_index n)
+{
+    String s1 = (String)dst;
+    String s2 = (String)src;
+    for (memory_index i = 0; i < n; i++)
+    {
+        *(s1++) = *(s2++);
+    }
+}
 
 inline memory_index
 StringLength(String str)
@@ -14,31 +22,90 @@ StringLength(String str)
     return(size);
 }
 
-StringData*
-StringDataAlloc(Arena* arena, memory_index length)
+inline uint8
+CharLower(uint8 c)
 {
-    StringData* s_data = (StringData*)PushSize(arena, sizeof(struct StringData) + length + 1);
-    s_data->capacity = length + 1;
-    s_data->size = length;
-    return s_data;
+    if ('A' <= c && c <= 'Z') { c = c - ('A' - 'a'); }
+    return(c);
+}
+
+inline uint8
+CharUpper(uint8 c)
+{
+    if ('a' <= c && c <= 'z') { c = c - ('a' - 'A'); }
+    return(c);
+}
+
+/*---*/
+
+StringData *
+StringDataAlloc(Arena *arena, memory_index length)
+{
+    StringData *sData = (StringData*)PushSize(arena, sizeof(struct StringData) + length + 1);
+    sData->capacity = length + 1;
+    sData->size = length;
+    return(sData);
 }
 
 String
-StringNew(Arena* arena, const char* str)
+StringNewLen(Arena *arena, void *str, memory_index size)
 {
-    StringData* sData = NULL;
+    StringData *sData = NULL;
 
     if (str)
     {
-        memory_index strLen = StringLength(str);
-        sData = StringDataAlloc(arena, strLen);
-        memcpy(&sData->buf, str, strLen);
-        *(sData->buf + strLen) = '\0';
+        sData = StringDataAlloc(arena, size);
+        StringCopy(&sData->buf, str, size);
+        *(sData->buf + size) = '\0';
     }
     else
     {
-        sData = StringDataAlloc(arena, 0);
+        sData = StringDataAlloc(arena, size);
         *sData->buf = '\0';
     }
-    return sData->buf;
+    return(sData->buf);
 }
+
+String
+StringNew(Arena *arena, void *str)
+{
+    String res = StringNewLen(arena, str, StringLength(str));
+
+    return(res);
+}
+
+StringData *
+StringGetData(String s)
+{
+	StringData *res = (StringData*)&s[-sizeof(struct StringData)];
+
+	return(res);
+}
+
+String
+StringSlice(Arena *arena, String s, memory_index first, memory_index last)
+{
+    String res = StringNewLen(arena, (s + first), last);
+
+    return(res);
+}
+
+String
+StringPrefix(Arena *arena, String s, memory_index last)
+{
+    String res = StringSlice(arena, s, 0, last);
+
+    return(res);
+}
+
+String
+StringPostfix(Arena *arena, String s, memory_index first)
+{
+    // TODO(liam): check this gets correct end size.
+    StringData *sData = StringGetData(s);
+    String res = StringSlice(arena, s, first, sData->size);
+
+    return(res);
+}
+
+
