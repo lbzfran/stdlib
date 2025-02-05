@@ -3,18 +3,16 @@
 #include "string.h"
 
 void
-StringCopy(void *dst, void *src, memory_index n)
+StringCopy(string dst, string src, memory_index size)
 {
-    String s1 = (String)dst;
-    String s2 = (String)src;
-    for (memory_index i = 0; i < n; i++)
+    for (memory_index i = 0; i < size; i++)
     {
-        *(s1++) = *(s2++);
+        *(dst++) = *(src++);
     }
 }
 
 inline memory_index
-StringLength(String str)
+StringLength(string str)
 {
     memory_index size = 0;
 
@@ -39,7 +37,7 @@ CharUpper(uint8 c)
 
 /*---*/
 
-String
+string
 StringNewLen(StringData* sd, void *str, memory_index size)
 {
     sd->buf = (str) ? (uint8*)(str) : (uint8*)"\0";
@@ -49,10 +47,10 @@ StringNewLen(StringData* sd, void *str, memory_index size)
     return(sd->buf);
 }
 
-String
+string
 StringNew(StringData* sd, void *str)
 {
-    String res = StringNewLen(sd, str, StringLength(str));
+    string res = StringNewLen(sd, str, StringLength(str));
 
     return(res);
 }
@@ -71,10 +69,10 @@ StringNew(StringData* sd, void *str)
 void
 StringSlice(StringData *dst, StringData src, memory_index first, memory_index last)
 {
-    // NOTE(liam): clamp to prevent overflow.
-    memory_index endSizeClamped = ClampDown(last, src.size);
+    // NOTE(liam): clamp to prevent overflow. +1 to include last character.
+    memory_index endSizeClamped = ClampDown(last + 1, src.size);
     memory_index startSizeClamped = ClampDown(first, endSizeClamped);
-    StringNewLen(dst, (src.buf + endSizeClamped), endSizeClamped - startSizeClamped);
+    StringNewLen(dst, (src.buf + startSizeClamped), endSizeClamped - startSizeClamped);
 }
 
 // Note(liam): small visualizations. [...] = string, 0 = keep, x = remove.
@@ -113,4 +111,13 @@ StringSkipBack(StringData *dst, StringData src, memory_index count)
     StringNewLen(dst, src.buf, countClamped);
 }
 
+void
+StringPrint(StringData s)
+{
+    while (s.size--)
+    {
+        putc(*(s.buf++), stdout);
+    }
+    putc('\n', stdout);
+}
 

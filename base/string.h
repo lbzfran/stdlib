@@ -4,22 +4,20 @@
 // NOTE(liam): use temp buffer.
 #include "arena.h"
 
-// NOTE(liam): I realized the implementation with type defining char * makes it difficult
-// to make these strings not dynamically allocated, despite needing to be immutable.
-typedef uint8* String;
+// NOTE(liam): directly name the datatype.
+typedef uint8* string;
 
 typedef struct StringData {
     // NOTE(liam): cap excludes header and null term.
     // since we're treating this as immutable:
     // cap == (size == used).
     memory_index size;
-    /*uint8 buf[];*/
-    String buf;
+    string buf;
 } StringData;
 
 typedef struct StringNode {
     struct StringNode *next;
-    String string;
+    stringData str;
 } StringNode;
 
 typedef struct StringList {
@@ -30,25 +28,35 @@ typedef struct StringList {
 } StringList;
 
 // NOTE(liam): helpers
-void StringCopy(void *dst, void *src, memory_index n);
-memory_index StringLength(String str);
+void StringCopy(string dst, string src, memory_index size);
+memory_index StringLength(string str);
 uint8 CharUpper(uint8 c);
 uint8 CharLower(uint8 c);
 
 // NOTE(liam): basics
 // Bit of a hack, but I'm casting the str input as null pointer to avoid
 // the compiler complaining about the the passing char pointer to uint pointer.
-String StringNewLen(StringData* sd, void *str, memory_index size);
-String StringNew(StringData* sd, void *str);
-/*StringData* StringGetData(String s);*/
+string StringNewLen(StringData *sd, void *str, memory_index size);
+string StringNew(StringData *sd, void *str);
 
 // NOTE(liam): manips
-// I think the slicing is inefficient as is since it requires the arena,
-// where I'd like to have the slices refer to the original string instead.
-void StringSlice(StringData *dst, StringData *src, memory_index first, memory_index last);
-void StringPrefix(StringData *dst, StringData *src, memory_index size);
-void StringPostfix(StringData *dst, StringData *src, memory_index size);
+void StringSlice(StringData *dst, StringData src, memory_index first, memory_index last);
+void StringPrefix(StringData *dst, StringData src, memory_index size);
+void StringPostfix(StringData *dst, StringData src, memory_index size);
 void StringSkipFront(StringData *dst, StringData src, memory_index count);
 void StringSkipBack(StringData *dst, StringData src, memory_index count);
+
+void StringPrint(StringData s);
+
+// NOTE(liam): list manips
+void StringListPush(StringList *list, String s, StringNode *node_alloced);
+void StringListPushArena(Arena *arena, StringList *list, String s);
+StringData StringJoin(Arena *arena);
+StringList StringSplit(Arena *arena);
+
+// NOTE(liam): fmt
+void string StringPushfv(Arena *arena, char *fmt, va_list args);
+void string StringPushf(Arena *arena, char *fmt, ...);
+void string StringListPushf(Arena *arena, StringList *list, char *fmt, ...);
 
 #endif // STRING_H
