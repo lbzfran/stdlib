@@ -239,7 +239,7 @@ StringListJoin(Arena *arena_astmp, StringList *list, StringJoin *join_optional)
 }
 
 StringList
-StringSplit(Arena *arena, StringData sd, char *splits, memory_index count)
+StringSplit(Arena *arena, StringData sd, char *splits)
 {
     StringList res = {0};
     bool32 is_split_byte = 0;
@@ -251,6 +251,7 @@ StringSplit(Arena *arena, StringData sd, char *splits, memory_index count)
     {
         uint8 byte = *ptr;
         bool32 is_split_byte = 0;
+        uint32 count = StringLength((string)splits);
         for (uint32 i = 0; i < count; i++)
         {
             if (byte == splits[i])
@@ -280,4 +281,56 @@ StringSplit(Arena *arena, StringData sd, char *splits, memory_index count)
     }
 
     return(res);
+}
+
+StringData
+StringPushfv(Arena *arena_astmp, char *fmt, va_list args)
+{
+    va_list args2;
+    va_copy(args2, args);
+
+    memory_index bufSize = 1024;
+    ArenaTemp tmp = ArenaScratchCreate(arena_astmp);
+
+    string buf = PushArray(arena_astmp, uint8, bufSize);
+    memory_index actualSize = vsnprintf((char*)buf, bufSize, fmt, args);
+
+    StringData res = {0};
+    if (actualSize < bufSize)
+    {
+        //ArenaPop(arena, bufSize - actualSize - 1);
+        StringNewLen(&res, buf, actualSize);
+    }
+    else
+    {
+        //ArenaPop(arena, bufSize);
+        string fixedBuf = PushArray(arena_astmp, uint8, actualSize + 1);
+        memory_index finalSize = vsnprintf((char*)fixedBuf, actualSize + 1, fmt, args2);
+        StringNewLen(&res, fixedBuf, finalSize);
+    }
+
+    va_end(args2);
+
+    ArenaScratchFree(tmp);
+    return(res);
+}
+
+StringData
+StringPushf(Arena *arena_astmp, char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    StringData res = StringPushfv(arena_astmp, fmt, args);
+    va_end(args);
+    return(res);
+}
+
+void
+StringListPushf(Arena *arena_astmp, StringList *list, char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    StringData str = StringPushfv(arena_astmp, fmt, args);
+    va_end(args);
+    StringListPush(arena_astmp, list, str);
 }

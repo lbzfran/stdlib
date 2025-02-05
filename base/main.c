@@ -47,9 +47,15 @@ int main(void)
     StringPrint(sjoin);
     putc('\n', stdout);
 
-    StringList nll = StringSplit(&local_arena, sjoin, " ", 2);
+    // TODO(liam): StringSplit not working as intended.
+    StringList nll = StringSplit(&local_arena, sjoin, "s");
 
     StringListPrint(nll);
+    putc('\n', stdout);
+
+    StringData sfmt = StringPushf(&local_arena, "%c %d", 46, 20);
+
+    StringPrint(sfmt);
     putc('\n', stdout);
 
     printf("size of uint8 pointer + size_t: %zu\n", sizeof(memory_index) + sizeof(uint8*));

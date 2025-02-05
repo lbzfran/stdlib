@@ -63,11 +63,11 @@ StringData StringListJoin(Arena *arena_astmp, StringList *list, StringJoin *join
 // NOTE(liam): splitter takes list of chars, and
 // splits only once when it finds the first
 // matching char.
-StringList StringSplit(Arena *arena, StringData sd, char *splits, memory_index count);
+StringList StringSplit(Arena *arena, StringData sd, char *splits);
 
 // NOTE(liam): fmt
-string StringPushfv(Arena *arena, char *fmt, va_list args);
-string StringPushf(Arena *arena, char *fmt, ...);
-string StringListPushf(Arena *arena, StringList *list, char *fmt, ...);
+StringData StringPushfv(Arena *arena_astmp, char *fmt, va_list args);
+StringData StringPushf(Arena *arena_astmp, char *fmt, ...);
+void StringListPushf(Arena *arena_astmp, StringList *list, char *fmt, ...);
 
 #endif // STRING_H
