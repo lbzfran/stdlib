@@ -17,7 +17,7 @@
 /*#define ARENA_USEMALLOC*/
 
 #include "def.h"
-#include "memory.h"
+#include "os/memory.h"
 
 #define DEFAULT_ALIGNMENT sizeof(void*)
 #define DEFAULT_BLOCKSIZE Kilobytes(16)

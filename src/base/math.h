@@ -3,6 +3,7 @@
 
 # include <stdio.h>
 # include "def.h"
+#include <math.h>
 // NOTE(liam): constants
 
 # pragma GCC diagnostic push

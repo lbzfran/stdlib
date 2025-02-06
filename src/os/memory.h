@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "def.h"
+#include "base/def.h"
 // NOTE(liam): Memory Allocation.
 // TODO(liam): figure out how to further abstract this;
 // see handmade hero: find platform layer, platform_allocate_memory, etc.
