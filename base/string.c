@@ -62,8 +62,7 @@ string
 StringNewRange(StringData *sd, string first, string last_optional)
 {
     sd->buf = first;
-    sd->size = (memory_index)(last_optional - first)
-;
+    sd->size = (memory_index)(last_optional - first);
     return(sd->buf);
 }
 
@@ -135,11 +134,23 @@ StringPrint(StringData s)
 void
 StringListPrint(StringList l)
 {
-    for (StringNode* current = l.first;
-            current != l.last;
-            current = current->next)
+
+    if (l.first == l.last)
     {
-        StringPrint(current->str);
+        if (l.first)
+        {
+            StringPrint(l.first->str);
+        }
+    }
+    else
+    {
+        for (StringNode *current = l.first;
+                current != l.last;
+                current = current->next)
+        {
+            StringPrint(current->str);
+        }
+        putc('\n', stdout);
     }
 }
 
@@ -242,42 +253,30 @@ StringList
 StringSplit(Arena *arena, StringData sd, char *splits)
 {
     StringList res = {0};
-    bool32 is_split_byte = 0;
-
+    bool32 split_index = 0;
     string ptr = sd.buf;
-    string word_first = ptr;
-    string optional = sd.buf + sd.size;
-    for (; ptr < optional; ptr++)
+    uint32 count = StringLength((string)splits);
+    for (memory_index p = 0; p < sd.size; p++)
     {
-        uint8 byte = *ptr;
-        bool32 is_split_byte = 0;
-        uint32 count = StringLength((string)splits);
+        uint8 byte = *(ptr + p);
         for (uint32 i = 0; i < count; i++)
         {
             if (byte == splits[i])
             {
-                is_split_byte = 1;
+                split_index = p;
                 break;
             }
         }
     }
 
-    if (is_split_byte)
+    if (split_index)
     {
-        if (word_first < ptr)
-        {
-            StringData tmp = {0};
-            StringNewRange(&tmp, word_first, ptr);
-            StringListPush(arena, &res, tmp);
-        }
-        word_first = ptr + 1;
-    }
+        StringData buf = {0};
+        StringSkipBack(&buf, sd, split_index);
+        StringListPush(arena, &res, buf);
 
-    if (word_first < ptr)
-    {
-        StringData tmp = {0};
-        StringNewRange(&tmp, word_first, ptr);
-        StringListPush(arena, &res, tmp);
+        //StringPostfix(&buf, sd, split_index);
+        //StringListPush(arena, &res, buf);
     }
 
     return(res);

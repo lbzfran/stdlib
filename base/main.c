@@ -42,23 +42,25 @@ int main(void)
 
     StringData sjoin = StringListJoin(&local_arena, &sll, null);
 
-
     printf("\nsize of new string: %llu\n", sjoin.size);
     StringPrint(sjoin);
     putc('\n', stdout);
 
+    StringData s_oldnews = {0};
+    StringNew(&s_oldnews, "This, is definitely old new.");
+
     // TODO(liam): StringSplit not working as intended.
-    StringList nll = StringSplit(&local_arena, sjoin, "s");
+    StringList nll = StringSplit(&local_arena, s_oldnews, ",");
 
     StringListPrint(nll);
     putc('\n', stdout);
 
-    StringData sfmt = StringPushf(&local_arena, "%c %d", 46, 20);
+    //StringData sfmt = StringPushf(&local_arena, "%c %d", 46, 20);
 
-    StringPrint(sfmt);
-    putc('\n', stdout);
+    //StringPrint(sfmt);
+    //putc('\n', stdout);
 
-    printf("size of uint8 pointer + size_t: %zu\n", sizeof(memory_index) + sizeof(uint8*));
+    //printf("size of uint8 pointer + size_t: %zu\n", sizeof(memory_index) + sizeof(uint8*));
 
     ArenaFree(&local_arena);
     return 0;
