@@ -69,13 +69,15 @@ StringNewRange(StringData *sd, string first, string last_optional)
 // NOTE(liam): ability to get the struct of an existing 'String' datatype.
 // passing arguments that was not explicitly initialized as 'String' will
 // definitely segfault, and is not within intended use for this structure.
-/*StringData **/
-/*StringGetData(String s)*/
-/*{*/
-/*	StringData *res = (StringData*)&s[-sizeof(struct StringData)];*/
-/**/
-/*	return(res);*/
-/*}*/
+/*
+StringData *
+StringGetData(String s)
+{
+	StringData *res = (StringData*)&s[-sizeof(struct StringData)];
+
+	return(res);
+}
+*/
 
 void
 StringSlice(StringData *dst, StringData src, memory_index first, memory_index last)
@@ -86,7 +88,8 @@ StringSlice(StringData *dst, StringData src, memory_index first, memory_index la
     StringNewLen(dst, (src.buf + startSizeClamped), endSizeClamped - startSizeClamped);
 }
 
-// Note(liam): small visualizations. [...] = string, 0 = keep, x = remove.
+// Note(liam): small visualizations. [...] = string, 0 = keep, x = remove,
+//                                     | = size/count
 // Note(liam): [00|xxxxx]
 void
 StringPrefix(StringData *dst, StringData src, memory_index size)
@@ -99,7 +102,6 @@ StringPrefix(StringData *dst, StringData src, memory_index size)
 void
 StringPostfix(StringData *dst, StringData src, memory_index size)
 {
-    // NOTE(liam): forces clamp down using infinity.
     memory_index sizeClamped = ClampDown(size, src.size);
     memory_index startPos = src.size - sizeClamped;
     StringNewLen(dst, (src.buf + startPos), sizeClamped);
@@ -110,36 +112,49 @@ void
 StringSkipFront(StringData *dst, StringData src, memory_index count)
 {
     memory_index countClamped = ClampDown(count, src.size);
-    memory_index startPos = src.size - countClamped;
-    StringNewLen(dst, (src.buf + startPos), countClamped);
+    StringNewLen(dst, (src.buf + countClamped), src.size);
 }
 
 // Note(liam): [00000|xx]
 void
 StringSkipBack(StringData *dst, StringData src, memory_index count)
 {
-    memory_index countClamped = ClampDown(count, src.size);
-    StringNewLen(dst, src.buf, countClamped);
+    memory_index countClamped = ClampDown(src.size, count);
+    memory_index endPos = src.size - countClamped;
+    StringNewLen(dst, src.buf, endPos);
+}
+
+void
+StringPrint_(StringData s, FILE *stream)
+{
+    while (s.size--)
+    {
+        putc(*(s.buf++), stream);
+    }
 }
 
 void
 StringPrint(StringData s)
 {
-    while (s.size--)
-    {
-        putc(*(s.buf++), stdout);
-    }
+    StringPrint_(s, stdout);
 }
 
 void
-StringListPrint(StringList l)
+StringPrintn(StringData s)
 {
+    StringPrint(s);
+    putc('\n', stdout);
+}
 
+void
+StringListPrint_(StringList l, FILE *stream, char end)
+{
     if (l.first == l.last)
     {
         if (l.first)
         {
-            StringPrint(l.first->str);
+            StringPrint_(l.first->str, stream);
+            putc(end, stream);
         }
     }
     else
@@ -148,10 +163,32 @@ StringListPrint(StringList l)
                 current != l.last;
                 current = current->next)
         {
-            StringPrint(current->str);
+            StringPrint_(current->str, stream);
+            putc(end, stream);
         }
-        putc('\n', stdout);
+        StringPrint_(l.last->str, stream);
+        putc(end, stream);
     }
+}
+
+void
+StringListPrint(StringList l)
+{
+    StringListPrint_(l, stdout, null);
+}
+
+void
+StringListPrintn(StringList l)
+{
+    StringListPrint_(l, stdout, '\n');
+    putc('\n', stdout);
+}
+
+void
+StringListPrintln(StringList l)
+{
+    StringListPrint(l);
+    putc('\n', stdout);
 }
 
 // NOTE(liam): being extra apparent, this function assumes user will
@@ -250,33 +287,31 @@ StringListJoin(Arena *arena_astmp, StringList *list, StringJoin *join_optional)
 }
 
 StringList
-StringSplit(Arena *arena, StringData sd, char *splits)
+StringSplit(Arena *arena, StringData sd, char *split_every_chars)
 {
     StringList res = {0};
-    bool32 split_index = 0;
-    string ptr = sd.buf;
-    uint32 count = StringLength((string)splits);
+    StringData buf = {0};
+    memory_index lastSplitIndex = 0;
+    uint32 count = StringLength((string)split_every_chars);
+
     for (memory_index p = 0; p < sd.size; p++)
     {
-        uint8 byte = *(ptr + p);
+        uint8 byte = *(sd.buf + p);
         for (uint32 i = 0; i < count; i++)
         {
-            if (byte == splits[i])
+            if (byte == split_every_chars[i])
             {
-                split_index = p;
-                break;
+                StringSlice(&buf, sd, lastSplitIndex, p - 1);
+                StringListPush(arena, &res, buf);
+                lastSplitIndex = p + 1;
             }
         }
     }
 
-    if (split_index)
+    if (lastSplitIndex < sd.size)
     {
-        StringData buf = {0};
-        StringSkipBack(&buf, sd, split_index);
+        StringSkipFront(&buf, sd, lastSplitIndex);
         StringListPush(arena, &res, buf);
-
-        //StringPostfix(&buf, sd, split_index);
-        //StringListPush(arena, &res, buf);
     }
 
     return(res);

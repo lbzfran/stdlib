@@ -53,19 +53,22 @@ void StringPostfix(StringData *dst, StringData src, memory_index size);
 void StringSkipFront(StringData *dst, StringData src, memory_index count);
 void StringSkipBack(StringData *dst, StringData src, memory_index count);
 
+// NOTE(liam): prints
+void StringPrint_(StringData s, FILE *stream);
 void StringPrint(StringData s);
+void StringPrintn(StringData s);
+void StringListPrint_(StringList l, FILE *stream, char end_optional);
 void StringListPrint(StringList l);
+void StringListPrintn(StringList l);
+void StringListPrintln(StringList l);
 
 // NOTE(liam): list manips
 void StringListPush_(StringList *list, StringData sd, StringNode *node_alloced);
 void StringListPush(Arena *arena, StringList *list, StringData sd);
 StringData StringListJoin(Arena *arena_astmp, StringList *list, StringJoin *join_optional);
-// NOTE(liam): splitter takes list of chars, and
-// splits only once when it finds the first
-// matching char.
-StringList StringSplit(Arena *arena, StringData sd, char *splits);
+StringList StringSplit(Arena *arena, StringData sd, char *split_every_chars);
 
-// NOTE(liam): fmt
+// NOTE(liam): fmts
 StringData StringPushfv(Arena *arena_astmp, char *fmt, va_list args);
 StringData StringPushf(Arena *arena_astmp, char *fmt, ...);
 void StringListPushf(Arena *arena_astmp, StringList *list, char *fmt, ...);
