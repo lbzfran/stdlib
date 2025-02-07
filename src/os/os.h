@@ -5,6 +5,6 @@
 /*#include "file.h"*/
 /*#include "thread.h"*/
 /*#include "time.h"*/
-/*#include "share.h"*/
+#include "shared.h"
 
 #endif
