@@ -120,6 +120,7 @@ int ap_float(float a, float b);
 # define ClampDown(a, b) Min(a, b)
 
 # define ArrayCount(a) (sizeof(a)/sizeof(*(a)))
+# define IsPowerOfTwo(n) (((n) & ((n) - 1)) == 0)
 
 # define Kilobytes(V) ((V)*1024LL)
 # define Megabytes(V) (Kilobytes(V)*1024LL)
@@ -144,7 +145,7 @@ int ap_float(float a, float b);
 // DEBUG START
 # define ENABLE_DEBUG
 # ifdef  ENABLE_DEBUG
-#  define Assert(c,msg) if (!(c)) { fprintf(stderr, "[*] <ASSERTION ERROR> at line %d:  %s\n", __LINE__, #msg); Statement(AssertBreak();); }
+#  define Assert(c) if (!(c)) { Statement(AssertBreak();); }
 // NOTE(liam): force exit program. basically code should never reach this point.
 #  define Throw(msg) { fprintf(stderr, "[*] <THROW> at line %d: %s\n", __LINE__, #msg); Statement(AssertBreak();); }
 # else

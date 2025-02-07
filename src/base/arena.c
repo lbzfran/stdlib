@@ -101,13 +101,13 @@ ArenaPush(Arena* arena, memory_index sizeInit, memory_index alignment)
         ArenaFooter* footer = GetFooter(arena);
         *footer = save;
     }
-    Assert((arena->pos + size) <= arena->size, "new allocation of dynamic arena somehow failed...");
+    Assert(((arena->pos + size) <= arena->size) && "new allocation of dynamic arena somehow failed...");
 
     memory_index alignmentOffset = ArenaGetAlignmentOffset(arena, alignment);
     void* res = (void*)(arena->base + arena->pos - alignmentOffset);
     arena->pos += size;
 
-    Assert(size >= sizeInit, "requested alloc exceeds arena size after alignment.");
+    Assert((size >= sizeInit) && "requested alloc exceeds arena size after alignment.");
 
     return(res);
 }
@@ -198,10 +198,10 @@ ArenaTempEnd(ArenaTemp temp)
         ArenaFreeCurrentBlock(arena);
     }
 
-    Assert(arena->pos >= temp.pos, "Arena position is less than temporary memory's position. Likely user-coded error.");
+    Assert((arena->pos >= temp.pos) && "Arena position is less than temporary memory's position. Likely user-coded error.");
     arena->pos = temp.pos;
 
-    Assert(arena->tempCount > 0, "Attempt to decrement Arena's temporary memory count when it is already 0.");
+    Assert((arena->tempCount > 0) && "Attempt to decrement Arena's temporary memory count when it is already 0.");
     arena->tempCount--;
 }
 
@@ -211,14 +211,14 @@ ArenaTempEnd(ArenaTemp temp)
 void
 ArenaTempCheck(Arena* arena)
 {
-    Assert(arena->tempCount == 0, "")
+    Assert(arena->tempCount == 0);
 }
 
 ArenaTemp
 ArenaScratchCreate(Arena* arena)
 {
     //TODO(liam): replace assertion.
-    Assert(arena->pos + sizeof(ArenaTemp) <= arena->size, "requested temp alloc exceeds arena size.");
+    Assert((arena->pos + sizeof(ArenaTemp) <= arena->size) && "requested temp alloc exceeds arena size.");
 
     ArenaTemp temp = ArenaTempBegin(arena);
     return temp;
