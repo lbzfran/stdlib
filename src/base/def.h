@@ -48,6 +48,7 @@
 
 # if defined(COMPILER_CLANG)
 #  define FILE_NAME __FILE_NAME__
+#  define threadvar __thread
 # else
 #  define FILE_NAME __FILE__
 # endif

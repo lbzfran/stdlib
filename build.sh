@@ -1,6 +1,17 @@
 #!/bin/sh
 
-SRC="./src"
 
-gcc -I./src -o ./build/base $SRC/base/base.c $SRC/base/string.c $SRC/base/math.c $SRC/os/memory_linux.c $SRC/base/arena.c -Wall -g -lm
-gcc -I./src -o ./build/os $SRC/os/os.c $SRC/base/string.c $SRC/base/math.c $SRC/os/memory_linux.c $SRC/base/arena.c -Wall -g -lm
+SRC="./src"
+LAYER_BASE="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c"
+LAYER_OS=""
+
+CC=gcc
+INC="-I./src"
+CFLAGS="-Wall -g"
+LD="-lm"
+FLAGS="${CFLAGS} ${INC} ${LD}"
+
+mkdir -p ./build
+
+$CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE
+$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE $LAYER_OS

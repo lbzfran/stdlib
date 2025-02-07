@@ -3,13 +3,6 @@
 
 #include "base/def.h"
 // NOTE(liam): Memory Allocation.
-// TODO(liam): figure out how to further abstract this;
-// see handmade hero: find platform layer, platform_allocate_memory, etc.
-/*#define PLATFORM_ALLOCATE_MEMORY(fn) fn()*/
-/*struct Platform {*/
-/*    void* (*AllocateMemory)(memory_index);*/
-/*    void (*DeallocateMemory)(void*, memory_index);*/
-/*};*/
 
 #ifndef ARENA_USEMALLOC
 // NOTE(liam): likely do not modify this.
@@ -21,10 +14,15 @@ void DeallocateMemory(void*, memory_index);
 #  define a_alloc malloc
 #  define a_free free
 # endif
-#
 # define AllocateMemory(s) a_alloc((s))
 # define DeallocateMemory(ptr, s) a_free((ptr))
 #endif
 
-#endif //MEMORY_H
+// NOTE(liam): thread context
+// TODO(liam): test this
+/*#if !defined(SCRATCH_POOL_CAP)*/
+/*# define SCRATCH_POOL_CAP 2*/
+/*#endif*/
+/*threadvar Arena *ScratchPool[SCRATCH_POOL_CAP] = 0;*/
 
+#endif //MEMORY_H
