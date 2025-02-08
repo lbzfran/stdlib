@@ -160,14 +160,12 @@ StringListPrint_(StringList l, FILE *stream, char end)
     else
     {
         for (StringNode *current = l.first;
-                current != l.last;
+                current != NULL;
                 current = current->next)
         {
             StringPrint_(current->str, stream);
             putc(end, stream);
         }
-        StringPrint_(l.last->str, stream);
-        putc(end, stream);
     }
 }
 
@@ -189,6 +187,28 @@ StringListPrintln(StringList l)
 {
     StringListPrint(l);
     putc('\n', stdout);
+}
+
+void
+StringListMap(StringList l, void(*fn)(StringData))
+{
+    if (l.first == l.last)
+    {
+        if (l.first)
+        {
+            fn(l.first->str);
+        }
+    }
+    else
+    {
+        for (StringNode *current = l.first;
+                current != l.last;
+                current = current->next)
+        {
+            fn(current->str);
+        }
+        fn(l.last->str);
+    }
 }
 
 // NOTE(liam): being extra apparent, this function assumes user will

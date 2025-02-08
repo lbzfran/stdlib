@@ -57,10 +57,10 @@ StringData FileRead(Arena *arena, StringData filename)
 }
 
 bool32 FileWriteListPort(StringData filename, StringList data)
-
+{
     bool32 res = true;
 
-    int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT);
+    FILE *file = fopen((char *)StringLiteral(filename), "w");
     if (!file)
     {
         res = false;
@@ -68,7 +68,6 @@ bool32 FileWriteListPort(StringData filename, StringList data)
     else
     {
         StringListPrint_(data, file, '\n');
-
 
         fclose(file);
     }
@@ -78,16 +77,36 @@ bool32 FileWriteListPort(StringData filename, StringList data)
 bool32 FileWriteList(StringData filename, StringList data)
 {
     bool32 res = true;
+    printf("INFO: executing plan!!!!\n");
 
-    int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT);
+    int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT,
+            S_IRUSR + S_IWUSR + S_IRGRP + S_IROTH);
     if (!file)
     {
         res = false;
     }
     else
     {
-        /*StringListPrint_(data, file, '\n');*/
-
+        ssize_t sizeWritten = 0;
+        if (data.first == data.last)
+        {
+            if (data.first)
+            {
+                sizeWritten += write(file, data.first->str.buf, data.first->str.size);
+            }
+        }
+        else
+        {
+            for (StringNode *current = data.first;
+                    current != NULL;
+                    current = current->next)
+            {
+                sizeWritten += write(file, current->str.buf, current->str.size);
+                current = current->next;
+            }
+        }
+        printf("written %lu of %lu.\n", sizeWritten, data.size);
+        /*StringListPrint_(data, fptr, '\n');*/
 
         close(file);
     }

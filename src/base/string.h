@@ -63,6 +63,7 @@ void StringListPrint_(StringList l, FILE *stream, char end_optional);
 void StringListPrint(StringList l);
 void StringListPrintn(StringList l);
 void StringListPrintln(StringList l);
+void StringListMap(StringList l, void(*fn)(StringData));
 
 // NOTE(liam): list manips
 void StringListPush_(StringList *list, StringData sd, StringNode *node_alloced);
