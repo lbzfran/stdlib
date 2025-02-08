@@ -9,8 +9,8 @@ int main(void)
 {
     Arena arena = {0};
     StringData path = {0};
-    /*StringData path2 = {0};*/
-    /*StringData path3 = {0};*/
+    StringData path2 = {0};
+    StringData path3 = {0};
     // NOTE(liam): make it easier to find files in a directory.
     // For now, the expectation is that the running dir is the
     // root of the git repo, and the shared object is in ./build
@@ -37,7 +37,7 @@ int main(void)
 
     printf("s->perms: %lu\n", s.access);
 
-    LibClose(lib);
+    /*LibClose(lib);*/
     ArenaFree(&arena);
     return 0;
 }
