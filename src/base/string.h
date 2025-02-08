@@ -39,6 +39,8 @@ memory_index StringLength(string str);
 uint8 CharUpper(uint8 c);
 uint8 CharLower(uint8 c);
 
+#define StringLiteral(sd) (sd.buf)
+
 // NOTE(liam): basics
 // Bit of a hack, but I'm casting the str input as null pointer to avoid
 // the compiler complaining about the the passing char pointer to uint pointer.

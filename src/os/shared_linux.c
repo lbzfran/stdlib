@@ -4,7 +4,11 @@
 
 void* LibOpen(StringData path)
 {
-    void* res = dlopen((char*)path.buf, RTLD_NOW);
+    void* res = dlopen((char*)StringLiteral(path), RTLD_NOW);
+    if (!res)
+    {
+        fprintf(stderr, "ERROR: dynamic linking error: %s\n", dlerror());
+    }
 
     return(res);
 }
@@ -19,7 +23,7 @@ void* LibLoad(void* lib, char* name)
     return(res);
 }
 
-void LibClose(void* lib)
+void LibClose(void *lib)
 {
     dlclose(lib);
 }

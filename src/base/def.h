@@ -129,8 +129,8 @@ int ap_float(float a, float b);
 
 # define Statement(S) do{ S }while(0)
 
-# define StringLiteral_(S) #S
-# define StringLiteral(S) StringLiteral_(S)
+# define Stringify_(S) #S
+# define Stringify(S) Stringify_(S)
 # define Glue_(A,B) A##B
 # define Glue(A,B) Glue_(A,B)
 

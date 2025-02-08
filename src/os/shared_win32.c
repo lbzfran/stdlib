@@ -14,7 +14,7 @@ void* LibLoad(void* lib, char* name)
     return(res);
 }
 
-void LibClose(void* lib)
+void LibClose(void *lib)
 {
     FreeLibrary(lib);
 }
