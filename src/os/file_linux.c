@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include "base/base.h"
 #include "file.h"
@@ -10,6 +11,7 @@ StringData FileRead(Arena *arena, StringData filename)
     StringData res = {0};
 
     FILE *file = fopen((char*)StringLiteral(filename), "r");
+    open((char *)filename, O_RDONLY);
     if (!file)
     {
         // TODO(liam): handle err.

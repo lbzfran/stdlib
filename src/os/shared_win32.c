@@ -5,7 +5,7 @@
 
 void* LibOpen(StringData path)
 {
-    HMODULE res = LoadLibrary(StringLiteral(path));
+    HMODULE res = LoadLibrary((char*)StringLiteral(path));
     if (!res)
     {
         printf("Failed to load DLL.\n");

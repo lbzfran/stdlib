@@ -139,13 +139,14 @@ int ap_float(float a, float b);
 
 // NOTE(liam): behavior of assert.
 # if !defined(AssertBreak)
-#  define AssertBreak() (*(int*)0 = 0)
+#  include <stdlib.h>
+#  define AssertBreak(c) { fprintf(stderr, "%s:%d: failed assertion '%s'\n.", __FILE__, __LINE__, #c); exit(1); }
 # endif
 
 // DEBUG START
 # define ENABLE_DEBUG
 # ifdef  ENABLE_DEBUG
-#  define Assert(c) if (!(c)) { Statement(AssertBreak();); }
+#  define Assert(c) if (!(c)) { Statement(AssertBreak(c);); }
 // NOTE(liam): force exit program. basically code should never reach this point.
 #  define Throw(msg) { fprintf(stderr, "[*] <THROW> at line %d: %s\n", __LINE__, #msg); Statement(AssertBreak();); }
 # else

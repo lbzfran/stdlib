@@ -5,7 +5,7 @@ SRC="./src"
 LAYER_BASE="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
 LAYER_OS="$SRC/os/shared_linux.c $SRC/os/file_linux.c"
 
-CC=gcc
+CC=clang
 INC="-I./src"
 CFLAGS="-Wall -g"
 LD="-lm"
