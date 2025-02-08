@@ -32,10 +32,10 @@ int main(void)
     StringPrint(content);
     printf("size of content: %lu\n", content.size);
 
-    FileWrite(path3, content);
-    FileProperties s = FileReadProperties(path3);
+    /*FileWrite(path3, content);*/
+    /*FileProperties s = FileReadProperties(path3);*/
 
-    printf("s->perms: %lu\n", s.access);
+    /*printf("s->perms: %lu\n", s.access);*/
 
     /*LibClose(lib);*/
     ArenaFree(&arena);

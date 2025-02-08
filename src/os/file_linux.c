@@ -57,7 +57,7 @@ StringData FileRead(Arena *arena, StringData filename)
 }
 
 bool32 FileWriteListPort(StringData filename, StringList data)
-{
+
     bool32 res = true;
 
     int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT);
