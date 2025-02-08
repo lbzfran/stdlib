@@ -10,8 +10,8 @@ StringData FileRead(Arena *arena, StringData filename)
     /*ArenaTemp tmp = ArenaScratchCreate(arena);*/
     StringData res = {0};
 
-    FILE *file = fopen((char*)StringLiteral(filename), "r");
-    open((char *)filename, O_RDONLY);
+    /*FILE *file = fopen((char*)StringLiteral(filename), "r");*/
+    int file = open((char *)filename, O_RDONLY);
     if (!file)
     {
         // TODO(liam): handle err.
@@ -20,17 +20,21 @@ StringData FileRead(Arena *arena, StringData filename)
     }
 
 
-    fseek(file, 0L, SEEK_END);
-    memory_index fileSize = ftell(file);
-    rewind(file);
+    /*fseek(file, 0L, SEEK_END);*/
+    memory_index fileSize = lseek(file, 0, SEEK_END);
+    lseek(file, 0, SEEK_SET);
+    /*memory_index fileSize = ftell(file);*/
+    /*rewind(file);*/
     /*memory_index fileSize = fsize(file);*/
 
     uint8 *buf = PushArray(arena, uint8, fileSize);
 
-    fread(buf, 1, fileSize, file);
+    /*fread(buf, 1, fileSize, file);*/
+    read(file, buf, fileSize);
     StringNew(&res, buf);
 
-    fclose(file);
+    close(file);
+    /*fclose(file);*/
     /*ArenaScratchFree(tmp);*/
     return(res);
 }
