@@ -6,13 +6,36 @@
 #include "base/base.h"
 #include "file.h"
 
-StringData FileRead(Arena *arena, StringData filename)
+StringData FileReadPort(Arena *arena, StringData filename)
 {
-    /*ArenaTemp tmp = ArenaScratchCreate(arena);*/
     StringData res = {0};
 
     FILE *file = fopen((char*)StringLiteral(filename), "r");
-    /*int *file = open((char *)filename, O_RDONLY);*/
+    if (!file)
+    {
+        // TODO(liam): handle err.
+        fprintf(stderr, "Failed to read file: %s\n", StringLiteral(filename));
+        return(res);
+    }
+
+    fseek(file, 0L, SEEK_END);
+    memory_index fileSize = ftell(file);
+    rewind(file);
+
+    uint8 *buf = PushArray(arena, uint8, fileSize);
+
+    fread(buf, 1, fileSize, file);
+    StringNew(&res, buf);
+
+    fclose(file);
+    return(res);
+}
+
+StringData FileRead(Arena *arena, StringData filename)
+{
+    StringData res = {0};
+
+    int file = open((char *)StringLiteral(filename), O_RDONLY);
     if (!file)
     {
         // TODO(liam): handle err.
@@ -21,30 +44,23 @@ StringData FileRead(Arena *arena, StringData filename)
     }
 
 
-    fseek(file, 0L, SEEK_END);
-    /*memory_index fileSize = lseek(*file, 0, SEEK_END);*/
-    /*lseek(*file, 0, SEEK_SET);*/
-    memory_index fileSize = ftell(file);
-    rewind(file);
-    /*memory_index fileSize = fsize(file);*/
+    memory_index fileSize = lseek(file, 0, SEEK_END);
+    lseek(file, 0, SEEK_SET);
 
     uint8 *buf = PushArray(arena, uint8, fileSize);
 
-    fread(buf, 1, fileSize, file);
-    /*read(*file, buf, fileSize);*/
+    read(file, buf, fileSize);
     StringNew(&res, buf);
 
-    /*close(file);*/
-    fclose(file);
-    /*ArenaScratchFree(tmp);*/
+    close(file);
     return(res);
 }
 
-bool32 FileWriteList(StringData filename, StringList data)
+bool32 FileWriteListPort(StringData filename, StringList data)
 {
     bool32 res = true;
 
-    FILE *file = fopen((char*)StringLiteral(filename), "w");
+    int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT);
     if (!file)
     {
         res = false;
@@ -53,7 +69,27 @@ bool32 FileWriteList(StringData filename, StringList data)
     {
         StringListPrint_(data, file, '\n');
 
+
         fclose(file);
+    }
+    return(res);
+}
+
+bool32 FileWriteList(StringData filename, StringList data)
+{
+    bool32 res = true;
+
+    int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT);
+    if (!file)
+    {
+        res = false;
+    }
+    else
+    {
+        /*StringListPrint_(data, file, '\n');*/
+
+
+        close(file);
     }
     return(res);
 }
