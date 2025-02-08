@@ -56,7 +56,7 @@
 // aliases
 # define global     static
 # define local      static
-# define function   static
+/*# define function   static*/
 
 # define c_linkage_begin extern "C" {
 # define c_linkage_end  }
