@@ -202,12 +202,11 @@ StringListMap(StringList l, void(*fn)(StringData))
     else
     {
         for (StringNode *current = l.first;
-                current != l.last;
+                current != NULL;
                 current = current->next)
         {
             fn(current->str);
         }
-        fn(l.last->str);
     }
 }
 

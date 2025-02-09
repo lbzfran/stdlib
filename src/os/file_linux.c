@@ -68,7 +68,6 @@ bool32 FileWriteListPort(StringData filename, StringList data)
     else
     {
         StringListPrint_(data, file, '\n');
-
         fclose(file);
     }
     return(res);
@@ -87,6 +86,7 @@ bool32 FileWriteList(StringData filename, StringList data)
     }
     else
     {
+        // TODO(liam): it may be possible to map this using StringListMap();
         ssize_t sizeWritten = 0;
         if (data.first == data.last)
         {
@@ -105,8 +105,11 @@ bool32 FileWriteList(StringData filename, StringList data)
                 current = current->next;
             }
         }
-        printf("written %lu of %lu.\n", sizeWritten, data.size);
-        /*StringListPrint_(data, fptr, '\n');*/
+        if (sizeWritten != data.size)
+        {
+            fprintf(stderr, "FAILED WRITE: written %lu of %lu.\n", sizeWritten, data.size);
+            res = false;
+        }
 
         close(file);
     }

@@ -1,6 +1,5 @@
 
 #include "memory.h"
-
 #include <memoryapi.h>
 
 void* AllocateMemory(memory_index size)

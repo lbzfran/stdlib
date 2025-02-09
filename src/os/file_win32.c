@@ -13,7 +13,7 @@ FileRead(Arena* arena, StringData filename)
 
     if (file == INVALID_HANDLE_VALUE)
     {
-        fprintf(stderr, "Failed to read file: %s\n", StringLiteral(filename));
+        fprintf(stderr, "Failed to access file '%s': (%s).\n", StringLiteral(filename), GetLastError());
         return(res);
     }
 
@@ -22,7 +22,10 @@ FileRead(Arena* arena, StringData filename)
 
     uint8 *buf = PushArray(arena, uint8, fileSize);
 
-    ReadFile(file, buf, fileSize, 0, 0);
+    if (!ReadFile(file, buf, fileSize, 0, 0))
+    {
+        fprintf(stderr, "Failed to read file '%s': (%s).\n", StringLiteral(filename), GetLastError());
+    }
 
     CloseHandle(file);
     return(res);
@@ -43,5 +46,21 @@ FileWriteList(StringData filename, StringList data)
     CloseHandle(file);
     return(res);
 }
-bool32 FileWrite(StringData filename, StringData data);
-FileProperties FileReadProperties(StringData filename);
+
+bool32 FileWrite(StringData filename, StringData data)
+{
+    StringNode node = {};
+    StringList list = {};
+    StringListPush_(&list, data, &node);
+    bool32 res = FileWriteList(filename, list);
+    return(res);
+}
+
+FileProperties
+FileReadProperties(StringData filename)
+{
+    FileProperties res = {0};
+    // TODO(liam): do this
+
+    return(res);
+}
