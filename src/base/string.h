@@ -15,6 +15,16 @@ typedef struct StringData {
     string buf;
 } StringData;
 
+typedef struct String16Data {
+    memory_index size;
+    uint16 *buf;
+} String16Data;
+
+typedef struct String32Data {
+    memory_index size;
+    uint32 *buf;
+} String32Data;
+
 typedef struct StringNode {
     struct StringNode *next;
     StringData str;
@@ -32,6 +42,16 @@ typedef struct StringJoin {
     StringData mid;
     StringData post;
 } StringJoin;
+
+typedef struct StringDecode {
+    uint32 codepoint;
+    memory_index length;
+} StringDecode;
+
+typedef uint32 StringMatchFlags;
+enum {
+    StringMatchFlag_CaseSensitive = 1 << 0,
+};
 
 // NOTE(liam): helpers
 void MemoryCopy(void *dst, void *src, memory_index size);
@@ -75,5 +95,13 @@ StringList StringSplit(Arena *arena, StringData sd, char *split_every_chars);
 StringData StringPushfv(Arena *arena_astmp, char *fmt, va_list args);
 StringData StringPushf(Arena *arena_astmp, char *fmt, ...);
 void StringListPushf(Arena *arena_astmp, StringList *list, char *fmt, ...);
+
+// NOTE(liam): unicode conversions
+
+StringDecode StringDecodeUTF8(string str, uint32 cap);
+uint32 StringEncodeUTF8(string dst, uint32 codepoint);
+
+String32Data StringConvert32(Arena *arena, StringData sd);
+
 
 #endif // STRING_H
