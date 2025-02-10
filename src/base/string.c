@@ -389,20 +389,20 @@ StringListPushf(Arena *arena_astmp, StringList *list, char *fmt, ...)
 }
 
 bool32
-StringMatch(StringData a, StringData b, StringMatchFlags flags)
+StringMatch(StringData a, StringData b, StringMatchFlags flags_optional)
 {
     bool32 res = false;
 
     if (a.size == b.size)
     {
         res = true;
-        bool32 case_sens = ((flags & StringMatchFlag_CaseSensitive) != 0);
+        bool32 case_sens = ((flags_optional & StringMatchFlag_CaseSensitive) != 0);
         for (memory_index i = 0;
                 i < a.size;
                 i++)
         {
-            uint8 ac = a.str[i];
-            uint8 bc = b.str[i];
+            uint8 ac = a.buf[i];
+            uint8 bc = b.buf[i];
             if (!case_sens)
             {
                 ac = CharUpper(ac);
@@ -419,87 +419,78 @@ StringMatch(StringData a, StringData b, StringMatchFlags flags)
     return(res);
 }
 
-StringDecode
-StringDecodeUTF8(string str, uint32 cap)
+// NOTE(liam): decoding FROM UTF32.
+uint32
+StringDecodeUTF8(uint32 *dst, uint8 *src)
 {
-    local const uint8 length[] = {
-        1, 1, 1, 1, // 000xx
-        1, 1, 1, 1,
-        1, 1, 1, 1,
-        1, 1, 1, 1,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        2, 2, 2, 2,
-        3, 3,
-        4,
-        0,
-    };
-    local const uint8 mask[] = {0x00, 0x7f, 0x1f, 0x0f, 0x07};
-    local const uint8 shift_last[] = { 0, 16, 12, 6, 0 };
+    // NOTE(liam): remember that the decoder targets only the
+    // dereferenced value of dst, and not any of its neighbors.
+    // So I would need to increment that pointer when decoding
+    // a longer string.
+    *dst = 0;
+    uint32 res = 0; // codepoint output
 
-    StringDecode res = {0};
-    if (cap > 0)
+    if (src[0] <= 0x7f)
     {
-        uint8 byte = str[0];
-        uint8 l = length[byte >> 3];
+        // NOTE(liam): 0-127 direct mapping
+        *dst = src[0];
+        res = 1;
+    }
+    else if ((src[0] & 0xE0) == 0xC0)
+    {
+        *dst = (((src[0] & 0x1F) << 6)  |
+                 (src[1] & 0x3F));
+        res = 2;
+    }
+    else if ((src[0] & 0xF0) == 0xE0)
+    {
+        *dst = (((src[0] & 0x0F) << 12) |
+                ((src[1] & 0x3F) << 6)  |
+                 (src[2] & 0x3F));
+        res = 3;
 
-        if (l > 0 && 1 <= cap)
-        {
-            uint32 cp = (byte & mask[l]) << 18;
-            switch (l)
-            {
-                case 3: cp |= ((str[3] & 0x3F) << 0);
-                case 2: cp |= ((str[2] & 0x3F) << 6);
-                case 1: cp |= ((str[1] & 0x3F) << 12);
-                case 0: cp >>= shift_last[l];
-            }
-            res.codepoint = cp;
-            res.length = l;
-        }
+    }
+    else if ((src[0] & 0xF8) == 0xF0)
+    {
+        *dst = (((src[0] & 0x07) << 18) |
+                ((src[1] & 0x3F) << 12) |
+                ((src[2] & 0x3F) << 6)  |
+                 (src[3] & 0x3F));
+        res = 4;
     }
     return(res);
 }
 
-uint32
-StringEncodeUTF8(string dst, uint32 codepoint)
+void
+StringEncodeUTF8(uint8 *dst, uint32 codepoint)
 {
-    uint32 size = 0;
-    if (codepoint < (1 << 8))
+    // NOTE(liam): directly encodes codepoint into dst.
+    if (codepoint <= 0x7f)
     {
         dst[0] = codepoint;
-        size = 1;
     }
-    else if (codepoint < (1 << 11))
+    else if (codepoint <= 0x7ff)
     {
         dst[0] = 0xC0 | (codepoint >> 6);
         dst[1] = 0x80 | (codepoint & 0x3F);
-        size = 2;
     }
-    else if (codepoint < (1 << 16))
+    else if (codepoint <= 0xffff)
     {
         dst[0] = 0xC0 | (codepoint >> 12);
         dst[1] = 0x80 | ((codepoint >> 6) & 0x3F);
         dst[2] = 0x80 | (codepoint & 0x3F);
-        size = 3;
     }
-    else if (codepoint < (1 << 21))
+    else if (codepoint <= 0x10ffff)
     {
         dst[0] = 0xC0 | (codepoint >> 18);
         dst[1] = 0x80 | ((codepoint >> 12) & 0x3F);
         dst[2] = 0x80 | ((codepoint >> 6) & 0x3F);
         dst[3] = 0x80 | (codepoint & 0x3F);
-        size = 4;
     }
-    else
-    {
-        dst[0] = '#';
-        size = 1;
-    }
-    return(size);
 }
 
 StringDecode
-StringDecodeUTF16(uint16 *str, uint32 cap)
+StringDecodeUTF16(uint16 *str, memory_index cap)
 {
     StringDecode res = { '#', 1 };
     uint16 x = str[0];
@@ -517,7 +508,7 @@ StringDecodeUTF16(uint16 *str, uint32 cap)
             uint16 yj = y - 0xDC00;
             uint32 xy = (xj << 10) | yj;
             res.codepoint = xy + 0x10000;
-            res.size = 2;
+            res.length = 2;
         }
     }
     return(res);
@@ -544,102 +535,102 @@ StringEncodeUTF16(uint16 *dst, uint32 codepoint)
 
 /*****************/
 
-String32Data
-StringConvert32(Arena *arena, StringData sd)
-{
-    uint32 *mem = PushArray(arena, uint32, sd.size + 1);
-
-    uint32 *dptr = mem;
-    memory_index pos = 0;
-    while (pos < sd.size)
-    {
-        StringDecode decode = StringDecodeUTF8(dptr, *(sd.buf + pos));
-        *dptr = decode.codepoint;
-        pos += decode.length;
-        dptr += 1;
-    }
-    *dptr = 0;
-
-    memory_index allocCount = sd.size + 1;
-    memory_index stringCount = (memory_index)(dptr - mem);
-    memory_index unusedCount = allocCount - stringCount - 1;
-    ArenaPop(arena, unusedCount * sizeof(*mem));
-
-    String32 res = {mem, stringCount};
-    return(res);
-}
-
-// NOTE(liam): implicit target to utf8
-StringData
-String32Convert(Arena *arena, String32Data sd)
-{
-    uint8 *mem = PushArray(arena, uint8, sd.size * 4 + 1);
-
-    uint8 *dptr = mem;
-    memory_index pos = 0;
-    while (pos < sd.size)
-    {
-        uint32 size = StringEncodeUTF8(dptr, *(sd.buf + pos++));
-        dptr += size;
-    }
-    *dptr = 0;
-
-    memory_index allocCount = sd.size * 4 + 1;
-    memory_index stringCount = (memory_index)(dptr - mem);
-    memory_index unusedCount = allocCount - stringCount - 1;
-    ArenaPop(arena, unusedCount * sizeof(*mem));
-
-    StringData res = {mem, stringCount};
-    return(res);
-
-}
-
-String16Data
-StringConvert16(Arena *arena, StringData sd)
-{
-    uint16 *mem = PushArray(arena, uint16, sd.size * 2 + 1);
-
-    uint16 *dptr = mem;
-    memory_index pos = 0;
-    while (pos < sd.size)
-    {
-        StringDecode decode = StringDecodeUTF8(dptr, *(sd.buf + pos));
-        uint32 encodedSize = StringEncodeUTF16(dptr, decode.codepoint);
-        pos += decode.length;
-        dptr += encodedSize;
-    }
-    *dptr = 0;
-
-    memory_index allocCount = sd.size * 2 + 1;
-    memory_index stringCount = (memory_index)(dptr - mem);
-    memory_index unusedCount = allocCount - stringCount - 1;
-    ArenaPop(arena, unusedCount * sizeof(*mem));
-
-    String16Data res = {mem, stringCount};
-    return(res);
-}
-
-StringData
-String16Convert(Arena *arena, String16Data sd)
-{
-    uint16 *mem = PushArray(arena, uint8, sd.size * 3 + 1);
-
-    uint8 *dptr = mem;
-    memory_index pos = 0;
-    while (pos < sd.size)
-    {
-        StringDecode decode = StringDecodeUTF16(dptr, *(sd.buf + pos));
-        uint32 encodedSize = StringEncodeUTF8(dptr, decode.codepoint);
-        pos += decode.length;
-        dptr += encodedSize;
-    }
-    *dptr = 0;
-
-    memory_index allocCount = sd.size * 3 + 1;
-    memory_index stringCount = (memory_index)(dptr - mem);
-    memory_index unusedCount = allocCount - stringCount - 1;
-    ArenaPop(arena, unusedCount * sizeof(*mem));
-
-    StringData res = {mem, stringCount};
-    return(res);
-}
+/*String32Data*/
+/*StringConvert32(Arena *arena, StringData sd)*/
+/*{*/
+/*    uint32 *mem = PushArray(arena, uint32, sd.size + 1);*/
+/**/
+/*    uint32 *dptr = mem;*/
+/*    memory_index pos = 0;*/
+/*    while (pos < sd.size)*/
+/*    {*/
+/*        StringDecode decode = StringDecodeUTF8(dptr, *(sd.buf + pos));*/
+/*        *dptr = decode.codepoint;*/
+/*        pos += decode.length;*/
+/*        dptr += 1;*/
+/*    }*/
+/*    *dptr = 0;*/
+/**/
+/*    memory_index allocCount = sd.size + 1;*/
+/*    memory_index stringCount = (memory_index)(*(dptr - mem));*/
+/*    memory_index unusedCount = allocCount - stringCount - 1;*/
+/*    ArenaPop(arena, unusedCount * sizeof(*mem));*/
+/**/
+/*    String32Data res = {mem, stringCount};*/
+/*    return(res);*/
+/*}*/
+/**/
+/*// NOTE(liam): implicit target to utf8*/
+/*StringData*/
+/*String32Convert(Arena *arena, String32Data sd)*/
+/*{*/
+/*    uint8 *mem = PushArray(arena, uint8, sd.size * 4 + 1);*/
+/**/
+/*    uint8 *dptr = mem;*/
+/*    memory_index pos = 0;*/
+/*    while (pos < sd.size)*/
+/*    {*/
+/*        uint32 size = StringEncodeUTF8(dptr, *(sd.buf + pos++));*/
+/*        dptr += size;*/
+/*    }*/
+/*    *dptr = 0;*/
+/**/
+/*    memory_index allocCount = sd.size * 4 + 1;*/
+/*    memory_index stringCount = (memory_index)(dptr - mem);*/
+/*    memory_index unusedCount = allocCount - stringCount - 1;*/
+/*    ArenaPop(arena, unusedCount * sizeof(*mem));*/
+/**/
+/*    StringData res = {mem, stringCount};*/
+/*    return(res);*/
+/**/
+/*}*/
+/**/
+/*String16Data*/
+/*StringConvert16(Arena *arena, StringData sd)*/
+/*{*/
+/*    uint16 *mem = PushArray(arena, uint16, sd.size * 2 + 1);*/
+/**/
+/*    uint16 *dptr = mem;*/
+/*    memory_index pos = 0;*/
+/*    while (pos < sd.size)*/
+/*    {*/
+/*        StringDecode decode = StringDecodeUTF8(dptr, *(sd.buf + pos));*/
+/*        uint32 encodedSize = StringEncodeUTF16(dptr, decode.codepoint);*/
+/*        pos += decode.length;*/
+/*        dptr += encodedSize;*/
+/*    }*/
+/*    *dptr = 0;*/
+/**/
+/*    memory_index allocCount = sd.size * 2 + 1;*/
+/*    memory_index stringCount = (memory_index)(dptr - mem);*/
+/*    memory_index unusedCount = allocCount - stringCount - 1;*/
+/*    ArenaPop(arena, unusedCount * sizeof(*mem));*/
+/**/
+/*    String16Data res = {mem, stringCount};*/
+/*    return(res);*/
+/*}*/
+/**/
+/*StringData*/
+/*String16Convert(Arena *arena, String16Data sd)*/
+/*{*/
+/*    uint8 *mem = PushArray(arena, uint16, sd.size * 3 + 1);*/
+/**/
+/*    uint8 *dptr = mem;*/
+/*    memory_index pos = 0;*/
+/*    while (pos < sd.size)*/
+/*    {*/
+/*        StringDecode decode = StringDecodeUTF16(dptr, *(sd.buf + pos));*/
+/*        uint32 encodedSize = StringEncodeUTF8(dptr, decode.codepoint);*/
+/*        pos += decode.length;*/
+/*        dptr += encodedSize;*/
+/*    }*/
+/*    *dptr = 0;*/
+/**/
+/*    memory_index allocCount = sd.size * 3 + 1;*/
+/*    memory_index stringCount = (memory_index)(dptr - mem);*/
+/*    memory_index unusedCount = allocCount - stringCount - 1;*/
+/*    ArenaPop(arena, unusedCount * sizeof(*mem));*/
+/**/
+/*    StringData res = {mem, stringCount};*/
+/*    return(res);*/
+/*}*/

@@ -1,5 +1,7 @@
 
 #include "base.h"
+#include "string.h"
+
 
 int main(void)
 {
@@ -58,8 +60,48 @@ int main(void)
     /*StringPrintn(tmp);*/
 
     // TODO(liam): StringSplit not working as intended.
-    StringList nll = StringSplit(&local_arena, s_oldnews, ",s");
+    StringList nll = StringSplit(&local_arena, s_oldnews, ",");
     StringListPrintln(nll);
+
+
+    uint8 utf8_test[4];
+
+    /*StringDecode test1 = StringDecodeUTF8(utf8_test, ArrayCount(utf8_test));*/
+    /*StringDecode test2 = StringDecodeUTF8(utf8_test + test1.length, ArrayCount(utf8_test) - test1.length);*/
+    /*StringDecode test3 = StringDecodeUTF8(utf8_test + test2.length, ArrayCount(utf8_test) - test2.length);*/
+    StringEncodeUTF8(utf8_test, 0x1F600);
+    printf("UTF8 conversion: ");
+    for (memory_index i = 0; i < 4; i++)
+    {
+        printf("encoded: %02x\n", utf8_test[i]);
+        StringDecode dc = StringDecodeUTF8(utf8_test + i, 4 - i);
+        printf("decoded: U+%x\n", dc.codepoint);
+    }
+
+    printf("CHATGPT conversions: ");
+    uint32_t unicode_code_point = 0x1F600;
+
+    // UTF-8 Encoding Example
+    unsigned char utf8_encoded[4]; // UTF-8 encoding requires up to 4 bytes
+    utf32_to_utf8(unicode_code_point, utf8_encoded);
+
+    printf("UTF-8 Encoded (Hex): ");
+    for (int i = 0; i < 4 && utf8_encoded[i] != 0; i++) {
+        printf("%02X ", utf8_encoded[i]);
+    }
+    printf("\n");
+
+    // UTF-8 Decoding Example
+    uint32_t decoded_code_point = utf8_to_utf32(utf8_encoded);
+    printf("Decoded Unicode Code Point: U+%X\n", decoded_code_point);
+
+
+    /*printf("test1 codepoint value: %x\n", test1.codepoint);*/
+    /*printf("test2 codepoint value: %x\n", test2.codepoint);*/
+    /*printf("test3 codepoint value: %x\n", test3.codepoint);*/
+    /*printf("test5 codepoint value: %x\n", test5.codepoint);*/
+    /*printf("size encoded: %u.\n", test2);*/
+
 
     /*StringData sfmt = StringPushf(&local_arena, "%c %d", 46, 20);*/
 

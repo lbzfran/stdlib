@@ -96,12 +96,22 @@ StringData StringPushfv(Arena *arena_astmp, char *fmt, va_list args);
 StringData StringPushf(Arena *arena_astmp, char *fmt, ...);
 void StringListPushf(Arena *arena_astmp, StringList *list, char *fmt, ...);
 
+bool32 StringMatch(StringData a, StringData b, StringMatchFlags flags_optional);
 // NOTE(liam): unicode conversions
 
-StringDecode StringDecodeUTF8(string str, uint32 cap);
-uint32 StringEncodeUTF8(string dst, uint32 codepoint);
+
+/*StringDecode StringDecodeUTF8(string str, memory_index cap);*/
+/*uint32 StringEncodeUTF8(string dst, uint32 codepoint);*/
+uint32 StringDecodeUTF8(uint32 *dst, uint8 *src);
+void StringEncodeUTF8(uint8 *dst, uint32 codepoint);
+StringDecode StringDecodeUTF16(uint16 *str, memory_index cap);
+uint32 StringEncodeUTF16(uint16 *dst, uint32 codepoint);
+
+
 
 String32Data StringConvert32(Arena *arena, StringData sd);
-
+StringData String32Convert(Arena *arena, String32Data sd);
+String16Data StringConvert16(Arena *arena, StringData sd);
+StringData String16Convert(Arena *arena, String16Data sd);
 
 #endif // STRING_H
