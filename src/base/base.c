@@ -93,7 +93,7 @@ int main(void)
     printf("decoded size: %u\n", size2);
 
 
-    printf("[String Conversion]:\n");
+    printf("[String utf8 Conversion]\n");
 
     StringData strpre = {0};
     StringNew(&strpre, "Howdy!");
@@ -110,13 +110,39 @@ int main(void)
         printf(" %02x", *(strconv.buf + i));
     }
     putc('\n', stdout);
-    printf("conversion buf size: %llu\n", strconv.size);
+    printf("conversion buf size: %lu\n", strconv.size);
 
     StringData strpost = String32Convert(&local_arena, strconv);
 
     printf("strpost: ");
     StringPrintn(strpost);
     printf("size of strpost: %lu\n", strpost.size);
+
+    printf("[String utf16 Conversion]\n");
+
+    StringData str16pre = {0};
+    StringNew(&str16pre, "Hola!");
+
+    printf("str16pre: ");
+    StringPrintn(str16pre);
+
+    String16Data str16conv = StringConvert16(&local_arena, str16pre);
+
+    printf("hex value after conversion:");
+    for (int i = 0; i < str16conv.size && str16conv.buf[i] != 0; i++)
+    {
+        printf(" %02x", *(str16conv.buf + i));
+    }
+    putc('\n', stdout);
+    printf("conversion buf size: %lu\n", str16conv.size);
+
+    StringData str16post = String16Convert(&local_arena, str16conv);
+
+    printf("str16post: ");
+    StringPrintn(str16post);
+    printf("size of strpost: %lu\n", str16post.size);
+
+
 
     /*StringData sfmt = StringPushf(&local_arena, "%c %d", 46, 20);*/
 

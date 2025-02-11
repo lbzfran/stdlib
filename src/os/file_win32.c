@@ -6,7 +6,8 @@ StringData
 FileRead(Arena* arena, StringData filename)
 {
     StringData res = {0};
-    HANDLE file = CreateFileW((WCHAR *)StringLiteral(filename),
+    String16Data fn_utf8 = StringConvert16(arena, filename);
+    HANDLE file = CreateFileW(fn_utf8.buf,
                                GENERIC_READ, 0, 0,
                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                                0);
