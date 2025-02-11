@@ -6,31 +6,6 @@
 #include "base/base.h"
 #include "file.h"
 
-StringData
-FileReadPort(Arena *arena, StringData filename)
-{
-    StringData res = {0};
-
-    FILE *file = fopen((char*)StringLiteral(filename), "r");
-    if (!file)
-    {
-        // TODO(liam): handle err.
-        fprintf(stderr, "Failed to read file: %s\n", StringLiteral(filename));
-        return(res);
-    }
-
-    fseek(file, 0L, SEEK_END);
-    memory_index fileSize = ftell(file);
-    rewind(file);
-
-    uint8 *buf = PushArray(arena, uint8, fileSize);
-
-    fread(buf, 1, fileSize, file);
-    StringNew(&res, buf);
-
-    fclose(file);
-    return(res);
-}
 
 StringData
 FileRead(Arena *arena, StringData filename)
@@ -62,29 +37,11 @@ FileRead(Arena *arena, StringData filename)
     return(res);
 }
 
-bool32
-FileWriteListPort(StringData filename, StringList data)
-{
-    bool32 res = true;
-
-    FILE *file = fopen((char *)StringLiteral(filename), "w");
-    if (!file)
-    {
-        res = false;
-    }
-    else
-    {
-        StringListPrint_(data, file, '\n');
-        fclose(file);
-    }
-    return(res);
-}
 
 bool32
-FileWriteList(StringData filename, StringList data)
+FileWriteList(Arena *arena, StringData filename, StringList data)
 {
     bool32 res = true;
-    printf("INFO: executing plan!!!!\n");
 
     int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT,
             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -115,7 +72,9 @@ FileWriteList(StringData filename, StringList data)
 
         if (sizeWritten != data.size)
         {
-            fprintf(stderr, "FAILED WRITE: written %lu of %lu.\n", sizeWritten, data.size);
+            // NOTE(liam): weird impl bc we're letting the write run over and
+            // over and only checking after the fact.
+            perror("Failed to write file");
             res = false;
         }
         close(file);
@@ -124,17 +83,17 @@ FileWriteList(StringData filename, StringList data)
 }
 
 bool32
-FileWrite(StringData filename, StringData data)
+FileWrite(Arena *arena, StringData filename, StringData data)
 {
     StringNode node = {};
     StringList list = {};
     StringListPush_(&list, data, &node);
-    bool32 res = FileWriteList(filename, list);
+    bool32 res = FileWriteList(arena, filename, list);
     return(res);
 }
 
 FileProperties
-FileReadProperties(StringData filename)
+FileReadProperties(Arena *arena, StringData filename)
 {
     FileProperties res = {0};
     struct stat sb;
@@ -147,5 +106,53 @@ FileReadProperties(StringData filename)
     res.time_modified = sb.st_mtime;
     res.flags = S_ISDIR(sb.st_mode);
 
+    return(res);
+}
+
+/***********************/
+/*  PORTABLE VERSIONS  */
+/***********************/
+
+StringData
+FileReadPort(Arena *arena, StringData filename)
+{
+    StringData res = {0};
+
+    FILE *file = fopen((char*)StringLiteral(filename), "r");
+    if (!file)
+    {
+        // TODO(liam): handle err.
+        fprintf(stderr, "Failed to read file: %s\n", StringLiteral(filename));
+        return(res);
+    }
+
+    fseek(file, 0L, SEEK_END);
+    memory_index fileSize = ftell(file);
+    rewind(file);
+
+    uint8 *buf = PushArray(arena, uint8, fileSize);
+
+    fread(buf, 1, fileSize, file);
+    StringNew(&res, buf);
+
+    fclose(file);
+    return(res);
+}
+
+bool32
+FileWriteListPort(StringData filename, StringList data)
+{
+    bool32 res = true;
+
+    FILE *file = fopen((char *)StringLiteral(filename), "w");
+    if (!file)
+    {
+        res = false;
+    }
+    else
+    {
+        StringListPrint_(data, file, '\n');
+        fclose(file);
+    }
     return(res);
 }

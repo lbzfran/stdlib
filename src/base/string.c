@@ -6,8 +6,8 @@
 void
 MemoryCopy(void *dst, void *src, memory_index size)
 {
-    uint8* cd = (uint8*)dst;
-    uint8* cs = (uint8*)src;
+    uint8 *cd = (uint8*)dst;
+    uint8 *cs = (uint8*)src;
     for (memory_index i = 0; i < size; i++)
     {
         *(cd++) = *(cs++);
@@ -15,7 +15,7 @@ MemoryCopy(void *dst, void *src, memory_index size)
 }
 
 inline memory_index
-StringLength(string str)
+StringLength(uint8 *str)
 {
     memory_index size = 0;
 
@@ -40,26 +40,26 @@ CharUpper(uint8 c)
 
 /*---*/
 
-string
+uint8*
 StringNewLen(StringData* sd, void *str, memory_index size)
 {
-    sd->buf = (str) ? (uint8*)(str) : (uint8*)"\0";
-    sd->size = ClampDown(size, StringLength((uint8*)str));
+    sd->buf = (str) ? (uint8 *)(str) : (uint8 *)"\0";
+    sd->size = ClampDown(size, StringLength((uint8 *)str));
     /*sd->size = size;*/
 
     return(sd->buf);
 }
 
-string
+uint8*
 StringNew(StringData* sd, void *str)
 {
-    string res = StringNewLen(sd, str, StringLength(str));
+    uint8 *res = StringNewLen(sd, str, StringLength(str));
 
     return(res);
 }
 
-string
-StringNewRange(StringData *sd, string first, string last_optional)
+uint8*
+StringNewRange(StringData *sd, uint8 *first, uint8 *last_optional)
 {
     sd->buf = first;
     sd->size = (memory_index)(last_optional - first);
@@ -88,7 +88,7 @@ StringSlice(StringData *dst, StringData src, memory_index first, memory_index la
     StringNewLen(dst, (src.buf + startSizeClamped), endSizeClamped - startSizeClamped);
 }
 
-// Note(liam): small visualizations. [...] = string, 0 = keep, x = remove,
+// Note(liam): small visualizations. [...] = uint8*, 0 = keep, x = remove,
 //                                     | = size/count
 // Note(liam): [00|xxxxx]
 void
@@ -269,8 +269,8 @@ StringListJoin(Arena *arena_astmp, StringList *list, StringJoin *join_optional)
 
     ArenaTemp tmpArena = ArenaScratchCreate(arena_astmp);
 
-    string str = PushArray(arena_astmp, uint8, size + 1);
-    string ptr = str;
+    uint8 *str = PushArray(arena_astmp, uint8, size + 1);
+    uint8 *ptr = str;
 
     // NOTE(liam): pre
     MemoryCopy(ptr, join->pre.buf, join->pre.size);
@@ -311,7 +311,7 @@ StringSplit(Arena *arena, StringData sd, char *split_every_chars)
     StringList res = {0};
     StringData buf = {0};
     memory_index lastSplitIndex = 0;
-    uint32 count = StringLength((string)split_every_chars);
+    uint32 count = StringLength((uint8 *)split_every_chars);
 
     for (memory_index p = 0; p < sd.size; p++)
     {
@@ -345,7 +345,7 @@ StringPushfv(Arena *arena_astmp, char *fmt, va_list args)
     memory_index bufSize = 1024;
     ArenaTemp tmp = ArenaScratchCreate(arena_astmp);
 
-    string buf = PushArray(arena_astmp, uint8, bufSize);
+    uint8 *buf = PushArray(arena_astmp, uint8, bufSize);
     memory_index actualSize = vsnprintf((char*)buf, bufSize, fmt, args);
 
     StringData res = {0};
@@ -357,7 +357,7 @@ StringPushfv(Arena *arena_astmp, char *fmt, va_list args)
     else
     {
         //ArenaPop(arena, bufSize);
-        string fixedBuf = PushArray(arena_astmp, uint8, actualSize + 1);
+        uint8 *fixedBuf = PushArray(arena_astmp, uint8, actualSize + 1);
         memory_index finalSize = vsnprintf((char*)fixedBuf, actualSize + 1, fmt, args2);
         StringNewLen(&res, fixedBuf, finalSize);
     }
@@ -426,7 +426,7 @@ StringDecodeUTF8(uint32 *dst, uint8 *src)
     // NOTE(liam): remember that the decoder targets only the
     // dereferenced value of dst, and not any of its neighbors.
     // So I would need to increment that pointer when decoding
-    // a longer string.
+    // a longer uint8*.
     *dst = 0;
     uint32 res = 0; // size output
 

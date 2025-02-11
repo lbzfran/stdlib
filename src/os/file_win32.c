@@ -144,7 +144,8 @@ FileReadProperties(Arena *arena, StringData filename)
 /*  PORTABLE VERSIONS  */
 /***********************/
 
-StringData FileReadPort(Arena *arena, StringData filename)
+StringData
+FileReadPort(Arena *arena, StringData filename)
 {
     StringData res = {0};
 
@@ -169,7 +170,8 @@ StringData FileReadPort(Arena *arena, StringData filename)
     return(res);
 }
 
-bool32 FileWriteListPort(StringData filename, StringList data)
+bool32
+FileWriteListPort(StringData filename, StringList data)
 {
     bool32 res = true;
 

@@ -4,15 +4,12 @@
 // NOTE(liam): use temp buffer.
 #include "arena.h"
 
-// NOTE(liam): directly name the datatype.
-typedef uint8* string;
-
 typedef struct StringData {
     // NOTE(liam): cap excludes header and null term.
     // since we're treating this as immutable:
     // cap == (size == used).
     memory_index size;
-    string buf;
+    uint8 *buf;
 } StringData;
 
 typedef struct String16Data {
@@ -50,7 +47,7 @@ enum {
 
 // NOTE(liam): helpers
 void MemoryCopy(void *dst, void *src, memory_index size);
-memory_index StringLength(string str);
+memory_index StringLength(uint8 *str);
 uint8 CharUpper(uint8 c);
 uint8 CharLower(uint8 c);
 
@@ -59,9 +56,9 @@ uint8 CharLower(uint8 c);
 // NOTE(liam): basics
 // Bit of a hack, but I'm casting the str input as null pointer to avoid
 // the compiler complaining about the the passing char pointer to uint pointer.
-string StringNewLen(StringData *sd, void *str, memory_index size);
-string StringNew(StringData *sd, void *str);
-string StringNewRange(StringData *sd, string first, string last_optional);
+uint8* StringNewLen(StringData *sd, void *str, memory_index size);
+uint8* StringNew(StringData *sd, void *str);
+uint8* StringNewRange(StringData *sd, uint8 *first, uint8 *last_optional);
 
 // NOTE(liam): manips
 void StringSlice(StringData *dst, StringData src, memory_index first, memory_index last);
@@ -95,8 +92,8 @@ bool32 StringMatch(StringData a, StringData b, StringMatchFlags flags_optional);
 // NOTE(liam): unicode conversions
 
 
-/*StringDecode StringDecodeUTF8(string str, memory_index cap);*/
-/*uint32 StringEncodeUTF8(string dst, uint32 codepoint);*/
+/*StringDecode StringDecodeUTF8(uint8* str, memory_index cap);*/
+/*uint32 StringEncodeUTF8(uint8* dst, uint32 codepoint);*/
 uint32 StringDecodeUTF8(uint32 *dst, uint8 *src); // 8 to 32
 uint32 StringEncodeUTF8(uint8 *dst, uint32 codepoint); // 32 to 8
 
