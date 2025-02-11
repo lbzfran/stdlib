@@ -29,11 +29,11 @@ int main(void)
     /* FILE TEST */
     StringData content = FileRead(&arena, path2);
 
-    /*StringPrint(content);*/
+    StringPrint(content);
     printf("size of content: %lu\n", content.size);
 
-    FileWrite(path3, content);
-    FileProperties s = FileReadProperties(path3);
+    FileWrite(&arena, path3, content);
+    FileProperties s = FileReadProperties(&arena, path3);
 
     printf("s->perms: %lu\n", s.access);
 

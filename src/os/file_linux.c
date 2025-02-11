@@ -6,7 +6,8 @@
 #include "base/base.h"
 #include "file.h"
 
-StringData FileReadPort(Arena *arena, StringData filename)
+StringData
+FileReadPort(Arena *arena, StringData filename)
 {
     StringData res = {0};
 
@@ -31,15 +32,16 @@ StringData FileReadPort(Arena *arena, StringData filename)
     return(res);
 }
 
-StringData FileRead(Arena *arena, StringData filename)
+StringData
+FileRead(Arena *arena, StringData filename)
 {
     StringData res = {0};
 
     int file = open((char *)StringLiteral(filename), O_RDONLY);
-    if (!file)
+    if (file == -1)
     {
         // TODO(liam): handle err.
-        fprintf(stderr, "Failed to read file: %s\n", StringLiteral(filename));
+        perror("Failed to open file");
         return(res);
     }
 
@@ -49,14 +51,19 @@ StringData FileRead(Arena *arena, StringData filename)
 
     uint8 *buf = PushArray(arena, uint8, fileSize);
 
-    read(file, buf, fileSize);
+    if (read(file, buf, fileSize) == -1)
+    {
+        perror("Failed to read file");
+        return(res);
+    }
     StringNew(&res, buf);
 
     close(file);
     return(res);
 }
 
-bool32 FileWriteListPort(StringData filename, StringList data)
+bool32
+FileWriteListPort(StringData filename, StringList data)
 {
     bool32 res = true;
 
@@ -73,13 +80,14 @@ bool32 FileWriteListPort(StringData filename, StringList data)
     return(res);
 }
 
-bool32 FileWriteList(StringData filename, StringList data)
+bool32
+FileWriteList(StringData filename, StringList data)
 {
     bool32 res = true;
     printf("INFO: executing plan!!!!\n");
 
     int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT,
-            S_IRUSR + S_IWUSR + S_IRGRP + S_IROTH);
+            S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (!file)
     {
         res = false;
@@ -102,21 +110,21 @@ bool32 FileWriteList(StringData filename, StringList data)
                     current = current->next)
             {
                 sizeWritten += write(file, current->str.buf, current->str.size);
-                current = current->next;
             }
         }
+
         if (sizeWritten != data.size)
         {
             fprintf(stderr, "FAILED WRITE: written %lu of %lu.\n", sizeWritten, data.size);
             res = false;
         }
-
         close(file);
     }
     return(res);
 }
 
-bool32 FileWrite(StringData filename, StringData data)
+bool32
+FileWrite(StringData filename, StringData data)
 {
     StringNode node = {};
     StringList list = {};

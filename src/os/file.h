@@ -26,9 +26,9 @@ typedef struct FileProperties {
     DataAccessFlags access;
 } FileProperties;
 
-StringData FileRead(Arena* arena, StringData filename);
-bool32 FileWriteList(StringData filename, StringList data);
-bool32 FileWrite(StringData filename, StringData data);
-FileProperties FileReadProperties(StringData filename);
+StringData FileRead(Arena *arena, StringData filename);
+bool32 FileWriteList(Arena *arena, StringData filename, StringList data);
+bool32 FileWrite(Arena *arena, StringData filename, StringData data);
+FileProperties FileReadProperties(Arena *arena, StringData filename);
 
 #endif
