@@ -43,11 +43,6 @@ typedef struct StringJoin {
     StringData post;
 } StringJoin;
 
-typedef struct StringDecode {
-    uint32 codepoint;
-    memory_index length;
-} StringDecode;
-
 typedef uint32 StringMatchFlags;
 enum {
     StringMatchFlag_CaseSensitive = 1 << 0,
@@ -102,12 +97,11 @@ bool32 StringMatch(StringData a, StringData b, StringMatchFlags flags_optional);
 
 /*StringDecode StringDecodeUTF8(string str, memory_index cap);*/
 /*uint32 StringEncodeUTF8(string dst, uint32 codepoint);*/
-uint32 StringDecodeUTF8(uint32 *dst, uint8 *src);
-void StringEncodeUTF8(uint8 *dst, uint32 codepoint);
-StringDecode StringDecodeUTF16(uint16 *str, memory_index cap);
-uint32 StringEncodeUTF16(uint16 *dst, uint32 codepoint);
+uint32 StringDecodeUTF8(uint32 *dst, uint8 *src); // 8 to 32
+uint32 StringEncodeUTF8(uint8 *dst, uint32 codepoint); // 32 to 8
 
-
+uint32 StringDecodeUTF16(uint32 *dst, uint16 *src); // 8 to 32 to 16
+uint32 StringEncodeUTF16(uint16 *dst, uint32 codepoint); // 16 to 32 to 8
 
 String32Data StringConvert32(Arena *arena, StringData sd);
 StringData String32Convert(Arena *arena, String32Data sd);

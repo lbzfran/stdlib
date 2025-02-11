@@ -63,49 +63,64 @@ int main(void)
     StringList nll = StringSplit(&local_arena, s_oldnews, ",");
     StringListPrintln(nll);
 
+    printf("[Character Conversion]:\n");
 
     uint8 utf8_test[4];
 
-    /*StringDecode test1 = StringDecodeUTF8(utf8_test, ArrayCount(utf8_test));*/
-    /*StringDecode test2 = StringDecodeUTF8(utf8_test + test1.length, ArrayCount(utf8_test) - test1.length);*/
-    /*StringDecode test3 = StringDecodeUTF8(utf8_test + test2.length, ArrayCount(utf8_test) - test2.length);*/
-    StringEncodeUTF8(utf8_test, 0x1F600);
-    printf("UTF8 conversion: ");
-    for (memory_index i = 0; i < 4; i++)
+    StringEncodeUTF8(utf8_test, 0x2603);
+    printf("UTF8 conversion:");
+    for (memory_index i = 0; i < 4 && utf8_test[i] != 0; i++)
     {
-        printf("encoded: %02x\n", utf8_test[i]);
-        StringDecode dc = StringDecodeUTF8(utf8_test + i, 4 - i);
-        printf("decoded: U+%x\n", dc.codepoint);
+        printf(" %02x", utf8_test[i]);
     }
+    putc('\n', stdout);
+    uint32 decoded = 0;
+    uint32 size = StringDecodeUTF8(&decoded, utf8_test);
+    printf("decoded: U+%04x\n", decoded);
+    printf("decoded size: %u\n", size);
 
-    printf("CHATGPT conversions: ");
-    uint32_t unicode_code_point = 0x1F600;
-
-    // UTF-8 Encoding Example
-    unsigned char utf8_encoded[4]; // UTF-8 encoding requires up to 4 bytes
-    utf32_to_utf8(unicode_code_point, utf8_encoded);
-
-    printf("UTF-8 Encoded (Hex): ");
-    for (int i = 0; i < 4 && utf8_encoded[i] != 0; i++) {
-        printf("%02X ", utf8_encoded[i]);
+    printf("UTF16 conversion:");
+    uint16 utf16_test[2];
+    StringEncodeUTF16(utf16_test, 0x1f60);
+    for (memory_index i = 0; i < 2 && utf16_test[i] != 0; i++)
+    {
+        printf(" %02x", utf16_test[i]);
     }
-    printf("\n");
+    putc('\n', stdout);
+    uint32 decoded2 = 0;
+    uint32 size2 = StringDecodeUTF16(&decoded2, utf16_test);
+    printf("decoded: U+%04x\n", decoded2);
+    printf("decoded size: %u\n", size2);
 
-    // UTF-8 Decoding Example
-    uint32_t decoded_code_point = utf8_to_utf32(utf8_encoded);
-    printf("Decoded Unicode Code Point: U+%X\n", decoded_code_point);
 
+    printf("[String Conversion]:\n");
 
-    /*printf("test1 codepoint value: %x\n", test1.codepoint);*/
-    /*printf("test2 codepoint value: %x\n", test2.codepoint);*/
-    /*printf("test3 codepoint value: %x\n", test3.codepoint);*/
-    /*printf("test5 codepoint value: %x\n", test5.codepoint);*/
-    /*printf("size encoded: %u.\n", test2);*/
+    StringData strpre = {0};
+    StringNew(&strpre, "Howdy!");
 
+    printf("strpre: ");
+    StringPrintn(strpre);
+    printf("size of strpre: %lu\n", strpre.size);
+
+    String32Data strconv = StringConvert32(&local_arena, strpre);
+
+    printf("hex value after conversion:");
+    for (int i = 0; i < strconv.size && strconv.buf[i] != 0; i++)
+    {
+        printf(" %02x", *(strconv.buf + i));
+    }
+    putc('\n', stdout);
+    printf("conversion buf size: %llu\n", strconv.size);
+
+    StringData strpost = String32Convert(&local_arena, strconv);
+
+    printf("strpost: ");
+    StringPrintn(strpost);
+    printf("size of strpost: %lu\n", strpost.size);
 
     /*StringData sfmt = StringPushf(&local_arena, "%c %d", 46, 20);*/
 
-    printf("size of uint8 pointer + size_t: %zu\n", sizeof(memory_index) + sizeof(uint8*));
+    //printf("size of uint8 pointer + size_t: %zu\n", sizeof(memory_index) + sizeof(uint8*));
 
     ArenaFree(&local_arena);
     return 0;

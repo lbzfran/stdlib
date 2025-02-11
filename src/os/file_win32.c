@@ -13,7 +13,7 @@ FileRead(Arena* arena, StringData filename)
 
     if (file == INVALID_HANDLE_VALUE)
     {
-        fprintf(stderr, "Failed to access file '%s': (%s).\n", StringLiteral(filename), GetLastError());
+        fprintf(stderr, "Failed to access file '%s': (error code %lu).\n", StringLiteral(filename), GetLastError());
         return(res);
     }
 
@@ -24,7 +24,7 @@ FileRead(Arena* arena, StringData filename)
 
     if (!ReadFile(file, buf, fileSize, 0, 0))
     {
-        fprintf(stderr, "Failed to read file '%s': (%s).\n", StringLiteral(filename), GetLastError());
+        fprintf(stderr, "Failed to read file '%s': (error code %lu).\n", StringLiteral(filename), GetLastError());
     }
 
     CloseHandle(file);

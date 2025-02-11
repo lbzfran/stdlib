@@ -428,7 +428,7 @@ StringDecodeUTF8(uint32 *dst, uint8 *src)
     // So I would need to increment that pointer when decoding
     // a longer string.
     *dst = 0;
-    uint32 res = 0; // codepoint output
+    uint32 res = 0; // size output
 
     if (src[0] <= 0x7f)
     {
@@ -461,54 +461,70 @@ StringDecodeUTF8(uint32 *dst, uint8 *src)
     return(res);
 }
 
-void
+uint32
 StringEncodeUTF8(uint8 *dst, uint32 codepoint)
 {
     // NOTE(liam): directly encodes codepoint into dst.
+    // NOTE(liam): passing 0 val at end ensures I won't overread
+    // when using this in other functions (i expect 0 at the end).
+    // that does mean the destination can only be between a length
+    // of 0-5.
+    uint32 res = 0; // size
     if (codepoint <= 0x7f)
     {
         dst[0] = codepoint;
+        //dst[1] = 0;
+        res = 1;
     }
     else if (codepoint <= 0x7ff)
     {
         dst[0] = 0xC0 | (codepoint >> 6);
         dst[1] = 0x80 | (codepoint & 0x3F);
+        //dst[2] = 0;
+        res = 2;
     }
     else if (codepoint <= 0xffff)
     {
-        dst[0] = 0xC0 | (codepoint >> 12);
+        dst[0] = 0xE0 | (codepoint >> 12);
         dst[1] = 0x80 | ((codepoint >> 6) & 0x3F);
         dst[2] = 0x80 | (codepoint & 0x3F);
+        //dst[3] = 0;
+        res = 3;
     }
     else if (codepoint <= 0x10ffff)
     {
-        dst[0] = 0xC0 | (codepoint >> 18);
+        dst[0] = 0xF0 | (codepoint >> 18);
         dst[1] = 0x80 | ((codepoint >> 12) & 0x3F);
         dst[2] = 0x80 | ((codepoint >> 6) & 0x3F);
         dst[3] = 0x80 | (codepoint & 0x3F);
+        //dst[4] = 0;
+        res = 4;
     }
+    return(res);
 }
 
-StringDecode
-StringDecodeUTF16(uint16 *str, memory_index cap)
+uint32
+StringDecodeUTF16(uint32 *dst, uint16 *src)
 {
-    StringDecode res = { '#', 1 };
-    uint16 x = str[0];
+    *dst = 0;
+    uint32 res = 0; // size output
+    uint16 x = src[0];
     if (x < 0xD800 || 0xDFFF < x)
     {
-        res.codepoint = x;
+        *dst = x;
+        res = 1;
     }
-    else if (cap >= 2)
+    else
     {
-        uint16 y = str[1];
+        uint16 y = src[1];
         if (0xD800 <= x && x < 0xDC00 &&
             0xDC00 <= y && y < 0xE000)
         {
             uint16 xj = x - 0xD800;
             uint16 yj = y - 0xDC00;
             uint32 xy = (xj << 10) | yj;
-            res.codepoint = xy + 0x10000;
-            res.length = 2;
+            *dst = xy + 0x10000;
+            res = 2;
         }
     }
     return(res);
@@ -517,22 +533,134 @@ StringDecodeUTF16(uint16 *str, memory_index cap)
 uint32
 StringEncodeUTF16(uint16 *dst, uint32 codepoint)
 {
-    uint32 size = 0;
+    uint32 res = 0; // size
     if (codepoint < 0x10000)
     {
         dst[0] = codepoint;
-        size = 1;
+        res = 1;
     }
     else
     {
         uint32 cpj = codepoint - 0x10000;
         dst[0] = (cpj >> 10) + 0xD800;
         dst[1] = (cpj & 0x3FF) + 0xDC00;
-        size = 2;
+        res = 2;
     }
-    return(size);
+    return(res);
 }
 
+
+// NOTE(liam): 8 -> 32 conversion
+String32Data
+StringConvert32(Arena *arena, StringData sd)
+{
+    memory_index allocationSize = sd.size + 1;
+    uint32 *mem = PushArray(arena, uint32, allocationSize);
+
+    uint32 *dptr = mem;
+    uint8 *ptr = sd.buf;
+    uint8 *end = sd.buf + sd.size;
+    while (ptr < end)
+    {
+        uint32 size = StringDecodeUTF8(dptr, ptr);
+        dptr = dptr + size; // check if this is correct
+        ptr++;
+    }
+    *dptr = 0; // mark end explicitly as 0.
+
+    // NOTE(liam): recalculate size.
+    memory_index stringSize = (memory_index)(dptr - mem); // get all the sizes added up.
+    memory_index unusedSize = allocationSize - stringSize - 1;
+
+    ArenaPop(arena, unusedSize * sizeof(*mem));
+
+    String32Data res = {stringSize, mem};
+    return(res);
+}
+
+StringData
+String32Convert(Arena *arena, String32Data sd)
+{
+    memory_index allocationSize = sd.size * 4 + 1;
+
+    uint8 *mem = PushArray(arena, uint8, allocationSize);
+
+    uint8 *dptr = mem;
+    uint32 *ptr = sd.buf;
+    uint32 *end = sd.buf + sd.size;
+    while (ptr < end)
+    {
+        uint32 size = StringEncodeUTF8(dptr, *ptr);
+        dptr = dptr + size; // also check if this is correct.
+        ptr++;
+    }
+    *dptr = 0;
+
+    memory_index stringSize = (memory_index)(dptr - mem); // get all the sizes added up.
+    memory_index unusedSize = allocationSize - stringSize - 1;
+
+    ArenaPop(arena, unusedSize * sizeof(*mem));
+
+    StringData res = {stringSize, mem};
+    return(res);
+}
+
+// NOTE(liam): 8 -> 32 -> 16 conversion
+String16Data
+StringConvert16(Arena *arena, StringData sd)
+{
+    memory_index allocationSize = sd.size * 2 + 1;
+    uint16 *mem = PushArray(arena, uint16, allocationSize);
+
+    uint16 *dptr = mem;
+    uint8 *ptr = sd.buf;
+    uint8 *end = sd.buf + sd.size;
+    while (ptr < end)
+    {
+        // NOTE(liam): will most likely need to decode to utf-32 first.
+        uint32 size = StringDecodeUTF16(dptr, ptr);
+        dptr = dptr + size; // check if this is correct
+        ptr++;
+    }
+    *dptr = 0; // mark end explicitly as 0.
+
+    // NOTE(liam): recalculate size.
+    memory_index stringSize = (memory_index)(dptr - mem); // get all the sizes added up.
+    memory_index unusedSize = allocationSize - stringSize - 1;
+
+    ArenaPop(arena, unusedSize * sizeof(*mem));
+
+    String16Data res = {stringSize, mem};
+    return(res);
+}
+
+StringData
+String16Convert(Arena *arena, String16Data sd)
+{
+    memory_index allocationSize = sd.size * 3 + 1;
+
+    uint8 *mem = PushArray(arena, uint8, allocationSize);
+
+    uint8 *dptr = mem;
+    uint16 *ptr = sd.buf;
+    uint16 *end = sd.buf + sd.size;
+    while (ptr < end)
+    {
+        // NOTE(liam): will most likely need to encode to utf-32 first.
+        uint32 size = StringEncodeUTF16(dptr, *ptr);
+        dptr = dptr + size; // also check if this is correct.
+        ptr++;
+    }
+    *dptr = 0;
+
+    memory_index stringSize = (memory_index)(dptr - mem); // get all the sizes added up.
+    memory_index unusedSize = allocationSize - stringSize - 1;
+
+    ArenaPop(arena, unusedSize * sizeof(*mem));
+
+    StringData res = {stringSize, mem};
+    return(res);
+}
 /*****************/
 
 /*String32Data*/
