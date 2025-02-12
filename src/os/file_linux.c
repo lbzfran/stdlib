@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include "base/base.h"
 #include "file.h"
 
@@ -112,6 +113,114 @@ FileReadProperties(Arena *arena, StringData filename)
     res.flags = S_ISDIR(sb.st_mode);
 
     return(res);
+}
+
+bool32
+FileDelete(Arena *arena, StringData filename)
+{
+    bool32 res = remove((char *)StringLiteral(filename));
+    if (res == -1)
+    {
+        perror("Failed to delete file");
+    }
+    return(res);
+}
+
+bool32
+FileRename(Arena *arena, StringData oldfn, StringData newfn)
+{
+    // NOTE(liam): Moving a file across filesystems is a no-go,
+    // and I will not be adding support for it since I don't specifically
+    // need it right now.
+    bool32 res = rename((char *)StringLiteral(oldfn), (char *)StringLiteral(newfn));
+    if (res == -1)
+    {
+        perror("Failed to rename file");
+    }
+    return(res);
+}
+
+bool32
+FileMakeDirectory(Arena *arena, StringData filename)
+{
+
+    bool32 res = mkdir((char *)StringLiteral(filename), 0755);
+    if (res == -1)
+    {
+        perror("Failed to make a new directory");
+    }
+    return(res);
+}
+
+bool32
+FileDeleteDirectory(Arena *arena, StringData dirname)
+{
+    bool32 res = rmdir((char *)StringLiteral(dirname));
+    if (res == -1)
+    {
+        perror("Failed to delete directory");
+    }
+    return(res);
+}
+
+FileIterator
+FileIterStart(StringData path)
+{
+    FileIterator res = {0};
+    res.path = path;
+    DIR *dr = opendir((char *)StringLiteral((path)));
+    if (dr == NULL)
+    {
+        perror("Failed to iterate on path");
+    }
+    else
+    {
+        res.handle = dr;
+    }
+    return(res);
+}
+
+bool32
+FileIterNext(Arena *arena, FileIterator *iter, StringData *name)
+{
+    bool32 res = true;
+
+    iter->entry = readdir(iter->handle);
+    if (iter->entry == NULL)
+    {
+        res = false;
+    }
+    else
+    {
+        uint8 *filename = (uint8 *)iter->entry->d_name;
+        bool32 isDot = (filename[0] == '.' && filename[1] == 0);
+        bool32 isDotDot = (filename[0] == '.' && filename[1] == '.' && filename[2] == 0);
+
+        if (isDot || isDotDot)
+        {
+            /*printf("INFO: skipping to next file.\n");*/
+            res = FileIterNext(arena, iter, name);
+        }
+        else
+        {
+            // NOTE(liam): used to also give file properties,
+            // but filename received from dirent is not a full path,
+            // so it's a lot of work that is pretty much outside
+            // the scope of this function.
+            StringNew(name, filename);
+        }
+    }
+    return(res);
+}
+
+void
+FileIterEnd(FileIterator iter)
+{
+    bool32 res = closedir((DIR *)iter.handle);
+    if (res == -1)
+    {
+        perror("Failed to close directory");
+    }
 }
 
 /***********************/

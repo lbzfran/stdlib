@@ -140,6 +140,32 @@ FileReadProperties(Arena *arena, StringData filename)
     return(res);
 }
 
+bool32
+FileDelete(Arena *arena, StringData filename)
+{
+
+}
+
+bool32
+FileRename(Arena *arena, StringData oldfn, StringData newfn)
+{
+
+}
+
+bool32
+FileMakeDirectory(Arena *arena, StringData filename)
+{
+
+    bool32 res = mkdir(StringLiteral(filename), 0);
+    return(res);
+}
+
+bool32
+FileDeleteDirectory(Arena *arena, StringData dirname)
+{
+
+}
+
 /***********************/
 /*  PORTABLE VERSIONS  */
 /***********************/
