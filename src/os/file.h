@@ -1,9 +1,9 @@
 #ifndef FILE_H
 #define FILE_H
 
-#include <dirent.h>
 #include "base/string.h"
 #include "base/arena.h"
+#include "time.h"
 
 typedef uint32 DataAccessFlags;
 enum {
@@ -11,8 +11,6 @@ enum {
     DataAccessFlags_Write   = (1 << 1),
     DataAccessFlags_Execute = (1 << 2)
 };
-
-typedef uint64 DenseTime;
 
 typedef uint32 FilePropertyFlags;
 enum {
@@ -27,26 +25,29 @@ typedef struct FileProperties {
     DataAccessFlags access;
 } FileProperties;
 
-// NOTE(liam): handle casts to DIR* and entry to struct dirent* in LINUX.
-// NOTE(liam): make this more generic and cross-platform
 typedef struct FileIterator {
-    StringData path; // root path
+    StringData root; // root path
     void *handle;
-    struct dirent *entry;
 } FileIterator;
 
-StringData FileRead(Arena *arena, StringData filename);
-bool32 FileWriteList(Arena *arena, StringData filename, StringList data);
-bool32 FileWrite(Arena *arena, StringData filename, StringData data);
-FileProperties FileReadProperties(Arena *arena, StringData filename);
+// NOTE(liam): passing arena is mostly used by win32 api, where
+// it uses it to convert the filename's unicode. It might be better to
+// convert ahead of time to avoid unnecessary arena passing.
+//
+// NOTE(liam): FileRead is the only function that actually needs
+// nontemporary data to store the file content.
+StringData FileRead(Arena *arena, StringData fpath);
+bool32 FileWriteList(Arena *arena, StringData fpath, StringList data);
+bool32 FileWrite(Arena *arena, StringData fpath, StringData data);
+FileProperties FileReadProperties(Arena *arena, StringData fpath);
 
-bool32 FileDelete(Arena *arena, StringData filename);
+bool32 FileDelete(Arena *arena, StringData fpath);
 bool32 FileRename(Arena *arena, StringData oldfn, StringData newfn);
-bool32 FileMakeDirectory(Arena *arena, StringData filename);
-bool32 FileDeleteDirectory(Arena *arena, StringData dirname);
+bool32 FileMakeDirectory(Arena *arena, StringData fpath);
+bool32 FileDeleteDirectory(Arena *arena, StringData dpath);
 
-FileIterator FileIterStart(StringData path);
-bool32 FileIterNext(Arena *arena, FileIterator *iter, StringData *name);
+FileIterator FileIterStart(StringData dpath);
+bool32 FileIterNext(Arena *arena, FileIterator iter, StringData *dst);
 void FileIterEnd(FileIterator iter);
 
 #endif

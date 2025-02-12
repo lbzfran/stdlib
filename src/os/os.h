@@ -3,8 +3,7 @@
 
 #include "memory.h"
 #include "file.h"
-/*#include "thread.h"*/
-/*#include "time.h"*/
 #include "shared.h"
+/*#include "time.h"*/
 
 #endif

@@ -9,11 +9,11 @@
 
 
 StringData
-FileRead(Arena *arena, StringData filename)
+FileRead(Arena *arena, StringData fpath)
 {
     StringData res = {0};
 
-    int file = open((char *)StringLiteral(filename), O_RDONLY);
+    int file = open((char *)StringLiteral(fpath), O_RDONLY);
     if (file == -1)
     {
         // TODO(liam): handle err.
@@ -40,12 +40,12 @@ FileRead(Arena *arena, StringData filename)
 
 
 bool32
-FileWriteList(Arena *arena, StringData filename, StringList data)
+FileWriteList(Arena *arena, StringData fpath, StringList data)
 {
     bool32 res = true;
 
-    int file = open((char *)StringLiteral(filename), O_WRONLY | O_CREAT,
-            S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    int file = open((char *)StringLiteral(fpath), O_WRONLY | O_CREAT,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (!file)
     {
         res = false;
@@ -84,27 +84,26 @@ FileWriteList(Arena *arena, StringData filename, StringList data)
 }
 
 bool32
-FileWrite(Arena *arena, StringData filename, StringData data)
+FileWrite(Arena *arena, StringData fpath, StringData data)
 {
     StringNode node = {};
     StringList list = {};
     StringListPush_(&list, data, &node);
-    bool32 res = FileWriteList(arena, filename, list);
+    bool32 res = FileWriteList(arena, fpath, list);
     return(res);
 }
 
 FileProperties
-FileReadProperties(Arena *arena, StringData filename)
+FileReadProperties(Arena *arena, StringData fpath)
 {
     FileProperties res = {0};
     struct stat sb;
 
-    bool32 err = stat((char*)StringLiteral(filename), &sb);
+    bool32 err = stat((char*)StringLiteral(fpath), &sb);
     if (err == -1)
     {
         perror("Failed to read file properties");
     }
-
 
     res.size = sb.st_size;
     res.access = sb.st_mode;
@@ -116,9 +115,9 @@ FileReadProperties(Arena *arena, StringData filename)
 }
 
 bool32
-FileDelete(Arena *arena, StringData filename)
+FileDelete(Arena *arena, StringData fpath)
 {
-    bool32 res = remove((char *)StringLiteral(filename));
+    bool32 res = remove((char *)StringLiteral(fpath));
     if (res == -1)
     {
         perror("Failed to delete file");
@@ -127,12 +126,12 @@ FileDelete(Arena *arena, StringData filename)
 }
 
 bool32
-FileRename(Arena *arena, StringData oldfn, StringData newfn)
+FileRename(Arena *arena, StringData oldfp, StringData newfp)
 {
     // NOTE(liam): Moving a file across filesystems is a no-go,
-    // and I will not be adding support for it since I don't specifically
-    // need it right now.
-    bool32 res = rename((char *)StringLiteral(oldfn), (char *)StringLiteral(newfn));
+    // and I will not be adding support for it since I don't
+    // have a specific need for it right now.
+    bool32 res = rename((char *)StringLiteral(oldfp), (char *)StringLiteral(newfp));
     if (res == -1)
     {
         perror("Failed to rename file");
@@ -141,10 +140,10 @@ FileRename(Arena *arena, StringData oldfn, StringData newfn)
 }
 
 bool32
-FileMakeDirectory(Arena *arena, StringData filename)
+FileMakeDirectory(Arena *arena, StringData fpath)
 {
 
-    bool32 res = mkdir((char *)StringLiteral(filename), 0755);
+    bool32 res = mkdir((char *)StringLiteral(fpath), 0755);
     if (res == -1)
     {
         perror("Failed to make a new directory");
@@ -164,42 +163,42 @@ FileDeleteDirectory(Arena *arena, StringData dirname)
 }
 
 FileIterator
-FileIterStart(StringData path)
+FileIterStart(StringData dpath)
 {
     FileIterator res = {0};
-    res.path = path;
-    DIR *dr = opendir((char *)StringLiteral((path)));
-    if (dr == NULL)
+    DIR *dirhandle = opendir((char *)StringLiteral(dpath));
+    if (dirhandle == NULL)
     {
         perror("Failed to iterate on path");
     }
     else
     {
-        res.handle = dr;
+        res.root = dpath;
+        res.handle = dirhandle;
     }
     return(res);
 }
 
 bool32
-FileIterNext(Arena *arena, FileIterator *iter, StringData *name)
+FileIterNext(Arena *arena, FileIterator iter, StringData *dst)
 {
     bool32 res = true;
 
-    iter->entry = readdir(iter->handle);
-    if (iter->entry == NULL)
+    struct dirent *ent = readdir(iter.handle);
+    if (ent == NULL)
     {
         res = false;
     }
     else
     {
-        uint8 *filename = (uint8 *)iter->entry->d_name;
+        uint8 *filename = (uint8 *)ent->d_name;
         bool32 isDot = (filename[0] == '.' && filename[1] == 0);
         bool32 isDotDot = (filename[0] == '.' && filename[1] == '.' && filename[2] == 0);
 
         if (isDot || isDotDot)
         {
             /*printf("INFO: skipping to next file.\n");*/
-            res = FileIterNext(arena, iter, name);
+            res = FileIterNext(arena, iter, dst);
         }
         else
         {
@@ -207,7 +206,7 @@ FileIterNext(Arena *arena, FileIterator *iter, StringData *name)
             // but filename received from dirent is not a full path,
             // so it's a lot of work that is pretty much outside
             // the scope of this function.
-            StringNew(name, filename);
+            StringNew(dst, filename);
         }
     }
     return(res);

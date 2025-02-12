@@ -55,9 +55,9 @@ int main(void)
     FileIterator iter = FileIterStart(dirpath1);
 
     printf("rootpath of iter: ");
-    StringPrintn(iter.path);
+    StringPrintn(iter.root);
 
-    while (FileIterNext(&arena, &iter, &path2))
+    while (FileIterNext(&arena, iter, &path2))
     {
         StringPrintn(path2);
     }

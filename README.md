@@ -53,12 +53,6 @@ arena.h
 > and adjusts the memory as required, and the default values are also set then
 > (for example, with the minimum size requirement for an Arena).
 
-memory.h
-
-> This section abstracts the platform-dependent memory allocation necessary,
-> effectively removing the need for malloc. I do leave malloc-compatible
-> implementations throughout the codebase as I see fit for portability, but
-> otherwise the memory management is done manually using this core.
 
 random.h
 
@@ -90,3 +84,35 @@ string.h
 > be in a way that made more sense to me, which remains the most important
 > part of this project. Overall, I'm happy I finally finished this part.
 
+> This part is for the unicode conversions. I've never really dealt with
+> unicode in the way that I did with this section. It's fairly confusing
+> since there's a lot of bit operations involved but they are pretty straight-
+> forward and there's references available in wikipedia and such for the
+> specific masks. That said I also did use other implementations of the
+> conversions in order to get a working version, and overall I'm glad I'm
+> done with it.
+
+## OS
+
+memory.h
+
+> This section abstracts the platform-dependent memory allocation necessary,
+> effectively removing the need for malloc. I do leave malloc-compatible
+> implementations throughout the codebase as I see fit for portability, but
+> otherwise the memory management is done manually using this core.
+
+file.h
+
+> This was a bit difficult, and involved a lot of refactoring because I wasn't
+> sure about how to do certain things. I contemplated about using fopen and
+> file pointers but I wanted more experience in using the specific OS calls
+> like CreateFile and the open system call, so I decided on that instead.
+
+> Once I got the write and read files down, it was smooth sailing.
+
+shared.h
+
+> This was actually very easy, and I'm, glad it wasn't too difficult abstracting
+> the shared library away in the struct. I did use some void pointers to
+> allow for the abstraction of the data type from the different OS's (since
+> they handle them differently).
