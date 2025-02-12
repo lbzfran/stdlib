@@ -98,7 +98,12 @@ FileReadProperties(Arena *arena, StringData filename)
     FileProperties res = {0};
     struct stat sb;
 
-    stat((char*)StringLiteral(filename), &sb);
+    bool32 err = stat((char*)StringLiteral(filename), &sb);
+    if (err == -1)
+    {
+        perror("Failed to read file properties");
+    }
+
 
     res.size = sb.st_size;
     res.access = sb.st_mode;
