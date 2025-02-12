@@ -7,9 +7,9 @@
 
 typedef uint32 DataAccessFlags;
 enum {
-    DataAccessFlags_Read    = (1 << 0),
-    DataAccessFlags_Write   = (1 << 1),
-    DataAccessFlags_Execute = (1 << 2)
+    DataAccessFlag_Read    = (1 << 0),
+    DataAccessFlag_Write   = (1 << 1),
+    DataAccessFlag_Execute = (1 << 2)
 };
 
 typedef uint32 FilePropertyFlags;

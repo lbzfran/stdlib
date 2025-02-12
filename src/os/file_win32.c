@@ -31,13 +31,36 @@ GetLastErrorAsString()
     return(res);
 }
 
+// local DateTime
+// SysToDateTime(SYSTEMTIME st)
+// {
+//     DateTime res = {0};
+//     res.year = st.wYear;
+//     res.month = (uint8)st.wMonth;
+//     res.day = st.wDay;
+//     res.hour = st.wHour;
+//     res.min = st.wMinute;
+//     res.sec = st.wSecond;
+//     res.ms = st.wMilliseconds;
+//     return(res);
+// }
+
+// local DenseTime
+// FileTimeToDense(FILETIME *ft)
+// {
+//     SYSTEMTIME systime = {0};
+//     FileTimeToSystemTime(ft, &systime);
+//     DateTime dt = SysToDateTime(systime);
+//     DenseTime res = DateTimeToDense(dt);
+//     return(res);
+// }
 
 StringData
 FileRead(Arena *arena, StringData filename)
 {
     StringData res = {0};
-    String16Data fn_utf8 = StringConvert16(arena, filename);
-    HANDLE file = CreateFile(StringLiteral(fn_utf8),
+    String16Data fn_utf16 = StringConvert16(arena, filename);
+    HANDLE file = CreateFileW(StringLiteral(fn_utf16),
                                GENERIC_READ, 0, 0,
                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                                0);
@@ -72,8 +95,8 @@ bool32
 FileWriteList(Arena *arena, StringData filename, StringList data)
 {
     bool32 res = true;
-    String16Data fn_utf8 = StringConvert16(arena, filename);
-    HANDLE file = CreateFile(StringLiteral(fn_utf8),
+    String16Data fn_utf16 = StringConvert16(arena, filename);
+    HANDLE file = CreateFileW(StringLiteral(fn_utf16),
                                 GENERIC_WRITE, 0, 0,
                                 CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
                                 0);
@@ -86,14 +109,16 @@ FileWriteList(Arena *arena, StringData filename, StringList data)
     }
     else
     {
-        LPDWORD sizeWritten = 0;
+        memory_index sizeWritten = 0;
+        DWORD bufSizeWritten = 0; // WriteFile sets this to null on every write.
         if (data.first == data.last)
         {
             if (data.first)
             {
                 WriteFile(file, data.first->str.buf,
                           data.first->str.size,
-                          sizeWritten, 0);
+                          &bufSizeWritten, 0);
+                sizeWritten = (memory_index)bufSizeWritten;
             }
         }
         else
@@ -104,15 +129,20 @@ FileWriteList(Arena *arena, StringData filename, StringList data)
             {
                 WriteFile(file, current->str.buf,
                         current->str.size,
-                        sizeWritten, 0);
+                        &bufSizeWritten, 0);
+                sizeWritten += (memory_index)bufSizeWritten;
             }
         }
 
-        if ((memory_index)sizeWritten != data.size)
+        if (sizeWritten != data.size)
         {
             StringData errmsg = GetLastErrorAsString();
-            fprintf(stderr, "Failed to write file '%s': %s",
-                    StringLiteral(filename), StringLiteral(errmsg));
+            fprintf(stderr, "Failed to write file '%s': size %llu of %llu; %s",
+                    StringLiteral(filename),
+                    sizeWritten,
+                    data.size,
+                    StringLiteral(errmsg)
+            );
             res = false;
         }
         CloseHandle(file);
@@ -136,32 +166,124 @@ FileReadProperties(Arena *arena, StringData filename)
 {
     FileProperties res = {0};
     // TODO(liam): do this
+    String16Data fn_utf16 = StringConvert16(arena, filename);
 
+    WIN32_FILE_ATTRIBUTE_DATA sb = {0};
+    if (GetFileAttributesExW(StringLiteral(fn_utf16), GetFileExInfoStandard, &sb))
+    {
+        res.size = ((uint64)sb.nFileSizeHigh << 32) | (uint64)sb.nFileSizeLow;
+        res.flags = (sb.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? FilePropertyFlag_IsDir : 0);
+        // TODO(liam): add time values when theyre implemented.
+        res.time_created = 0;
+        res.time_modified = 0;
+        res.access = DataAccessFlag_Read | DataAccessFlag_Execute;
+        if (!(sb.dwFileAttributes & FILE_ATTRIBUTE_READONLY))
+        {
+            res.access |= DataAccessFlag_Write;
+        }
+
+    }
     return(res);
 }
 
 bool32
 FileDelete(Arena *arena, StringData filename)
 {
-
+    String16Data fn_utf16 = StringConvert16(arena, filename);
+    bool32 res = DeleteFileW(StringLiteral(fn_utf16));
+    if (res == false)
+    {
+        StringData errmsg = GetLastErrorAsString();
+        fprintf(stderr, "Failed to delete file '%s': %s",
+                StringLiteral(filename), StringLiteral(errmsg));
+    }
+    return(res);
 }
 
 bool32
 FileRename(Arena *arena, StringData oldfn, StringData newfn)
 {
+    String16Data oldfn_utf16 = StringConvert16(arena, oldfn);
+    String16Data newfn_utf16 = StringConvert16(arena, newfn);
+
+    bool32 res = MoveFileExW(StringLiteral(oldfn_utf16), StringLiteral(newfn_utf16),
+                           MOVEFILE_FAIL_IF_NOT_TRACKABLE);
+    if (res == false)
+    {
+        StringData errmsg = GetLastErrorAsString();
+        fprintf(stderr, "Failed to rename file '%s' to '%s': %s",
+                StringLiteral(oldfn), StringLiteral(newfn), StringLiteral(errmsg));
+    }
+    return(res);
 
 }
 
 bool32
-FileMakeDirectory(Arena *arena, StringData filename)
+FileMakeDirectory(Arena *arena, StringData dirname)
 {
-
-    bool32 res = mkdir(StringLiteral(filename), 0);
+    String16Data fn_utf16 = StringConvert16(arena, dirname);
+    bool32 res = CreateDirectoryW(StringLiteral(fn_utf16), 0);
+    if (res == false)
+    {
+        StringData errmsg = GetLastErrorAsString();
+        fprintf(stderr, "Failed to make directory '%s': %s",
+        StringLiteral(dirname), StringLiteral(errmsg));
+    }
     return(res);
 }
 
 bool32
 FileDeleteDirectory(Arena *arena, StringData dirname)
+{
+    String16Data fn_utf16 = StringConvert16(arena, dirname);
+    bool32 res = RemoveDirectoryW(StringLiteral(fn_utf16));
+    if (res == false)
+    {
+        StringData errmsg = GetLastErrorAsString();
+        fprintf(stderr, "Failed to delete directory '%s': %s",
+                StringLiteral(dirname), StringLiteral(errmsg));
+    }
+    return(res);
+}
+
+FileIterator
+FileIterStart(StringData dpath)
+{
+    FileIterator res = {0};
+
+    StringData sep = {0};
+    StringNew(&sep, "\\*");
+
+    StringNode nodes[2];
+    StringList list = {0};
+    StringListPush_(&list, dpath, nodes);
+    StringListPush_(&list, sep, nodes + 1);
+    StringData fullpath = StringListJoin(arena, &list, null);
+
+    String16Data fn_utf16 = StringConvert16(arena, fullpath);
+    HANDLE *dirhandle = FindFirstFileW(fn_utf16, );
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        StringData errmsg = GetLastErrorAsString();
+        fprintf(stderr, "Failed to make directory '%s': %s",
+        StringLiteral(dpath), StringLiteral(errmsg));
+    }
+    else
+    {
+        res.root = dpath;
+        res.handle = dirhandle;
+    }
+    return(res);
+}
+
+bool32
+FileIterNext(Arena *arena, FileIterator iter, StringData *dst)
+{
+
+}
+
+void
+FileIterEnd(FileIterator iter)
 {
 
 }
