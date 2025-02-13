@@ -1,6 +1,7 @@
 
 #include "file.h"
 #include <stdio.h>
+#include <dirent.h>
 #include <Windows.h>
 
 // NOTE(liam): specific function to windows api.
@@ -246,47 +247,92 @@ FileDeleteDirectory(Arena *arena, StringData dirname)
     return(res);
 }
 
-FileIterator
-FileIterStart(StringData dpath)
-{
-    FileIterator res = {0};
+// FileIterator
+// FileIterStart(Arena *arena, StringData dpath)
+// {
+//     WIN32_FIND_DATAW fdata = {0};
 
-    StringData sep = {0};
-    StringNew(&sep, "\\*");
+//     FileIterator res = {0};
+//     StringData entry = {0};
+//     StringData star = {0};
+//     StringNode nodes[2];
+//     StringList list = {0};
 
-    StringNode nodes[2];
-    StringList list = {0};
-    StringListPush_(&list, dpath, nodes);
-    StringListPush_(&list, sep, nodes + 1);
-    StringData fullpath = StringListJoin(arena, &list, null);
+//     StringNew(&star, "/*");
+//     StringListPush_(&list, dpath, nodes);
+//     StringListPush_(&list, star, nodes + 1);
+//     StringData fullpath = StringListJoin(arena, &list, null);
+//     StringPrintn(fullpath);
 
-    String16Data fn_utf16 = StringConvert16(arena, fullpath);
-    HANDLE *dirhandle = FindFirstFileW(fn_utf16, );
-    if (handle == INVALID_HANDLE_VALUE)
-    {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to make directory '%s': %s",
-        StringLiteral(dpath), StringLiteral(errmsg));
-    }
-    else
-    {
-        res.root = dpath;
-        res.handle = dirhandle;
-    }
-    return(res);
-}
+//     String16Data fn_utf16 = StringConvert16(arena, fullpath);
 
-bool32
-FileIterNext(Arena *arena, FileIterator iter, StringData *dst)
-{
+//     HANDLE *dirhandle = FindFirstFileW(StringLiteral(fn_utf16), &fdata);
 
-}
+//     if (dirhandle == INVALID_HANDLE_VALUE)
+//     {
+//         StringData errmsg = GetLastErrorAsString();
+//         fprintf(stderr, "Failed to iterate at '%s': %s",
+//         StringLiteral(dpath), StringLiteral(errmsg));
+//     }
+//     else
+//     {
+//         res.root = dpath;
+//         res.handle = dirhandle;
+//     }
+//     return(res);
+// }
 
-void
-FileIterEnd(FileIterator iter)
-{
+// bool32
+// FileIterNext(Arena *arena, FileIterator *iter, StringData *dst)
+// {
+//     WIN32_FIND_DATAW fdata = {0};
+//     bool32 res = true;
 
-}
+//     // NOTE(liam): flush entry
+//     if (iter->entry.size)
+//     {
+//         // NOTE(liam): likely more efficient way to do this string copying
+//         StringNew(dst, StringLiteral(iter->entry));
+//         StringNew(&iter->entry, "");
+//     }
+//     else
+//     {
+//         res = FindNextFileW(iter->handle, &fdata);
+//         if (res)
+//         {
+//             uint8 *filename = (uint8 *)fdata.cFileName;
+//             bool32 isDot = (filename[0] == '.' && filename[1] == 0);
+//             bool32 isDotDot = (filename[0] == '.' && filename[1] == '.' && filename[2] == 0);
+
+//             if (isDot || isDotDot)
+//             {
+//                 /*printf("INFO: skipping to next file.\n");*/
+//                 res = FileIterNext(arena, iter, dst);
+//             }
+//             else
+//             {
+//                 StringNew(dst, filename);
+//             }
+//         }
+//         else
+//         {
+//             printf("Didn't make it...\n");
+//         }
+//     }
+//     return(res);
+// }
+
+// void
+// FileIterEnd(FileIterator iter)
+// {
+//     bool32 res = FindClose(iter.handle);
+//     if (res == null)
+//     {
+//         StringData errmsg = GetLastErrorAsString();
+//         fprintf(stderr, "Failed to close directory: %s",
+//         StringLiteral(errmsg));
+//     }
+// }
 
 /***********************/
 /*  PORTABLE VERSIONS  */
@@ -334,4 +380,64 @@ FileWriteListPort(StringData filename, StringList data)
         fclose(file);
     }
     return(res);
+}
+
+FileIterator
+FileIterStartPort(Arena *arena, StringData dpath)
+{
+    FileIterator res = {0};
+    DIR *dirhandle = opendir((char *)StringLiteral(dpath));
+    if (dirhandle == NULL)
+    {
+        perror("Failed to iterate on path");
+    }
+    else
+    {
+        res.root = dpath;
+        res.handle = dirhandle;
+    }
+    return(res);
+}
+
+bool32
+FileIterNextPort(Arena *arena, FileIterator *iter, StringData *dst)
+{
+    bool32 res = true;
+
+    struct dirent *ent = readdir(iter->handle);
+    if (ent == NULL)
+    {
+        res = false;
+    }
+    else
+    {
+        uint8 *filename = (uint8 *)ent->d_name;
+        bool32 isDot = (filename[0] == '.' && filename[1] == 0);
+        bool32 isDotDot = (filename[0] == '.' && filename[1] == '.' && filename[2] == 0);
+
+        if (isDot || isDotDot)
+        {
+            /*printf("INFO: skipping to next file.\n");*/
+            res = FileIterNextPort(arena, iter, dst);
+        }
+        else
+        {
+            // NOTE(liam): used to also give file properties,
+            // but filename received from dirent is not a full path,
+            // so it's a lot of work that is pretty much outside
+            // the scope of this function.
+            StringNew(dst, filename);
+        }
+    }
+    return(res);
+}
+
+void
+FileIterEndPort(FileIterator iter)
+{
+    bool32 res = closedir((DIR *)iter.handle);
+    if (res == -1)
+    {
+        perror("Failed to close directory");
+    }
 }

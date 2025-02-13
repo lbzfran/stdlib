@@ -46,8 +46,20 @@ bool32 FileRename(Arena *arena, StringData oldfn, StringData newfn);
 bool32 FileMakeDirectory(Arena *arena, StringData fpath);
 bool32 FileDeleteDirectory(Arena *arena, StringData dpath);
 
-FileIterator FileIterStart(StringData dpath);
-bool32 FileIterNext(Arena *arena, FileIterator iter, StringData *dst);
-void FileIterEnd(FileIterator iter);
+FileIterator FileIterStartPort(Arena *arena, StringData dpath);
+bool32 FileIterNextPort(Arena *arena, FileIterator *iter, StringData *dst);
+void FileIterEndPort(FileIterator iter);
 
+// NOTE(liam): windows api sucks; i'm just gonna wrap the linux syscall instead.
+#if defined(OS_WINDOWS)
+# define FileIterStart FileIterStartPort
+# define FileIterNext FileIterNextPort
+# define FileIterEnd FileIterEndPort
+#else
+FileIterator FileIterStart(Arena *arena, StringData dpath);
+bool32 FileIterNext(Arena *arena, FileIterator *iter, StringData *dst);
+void FileIterEnd(FileIterator iter);
 #endif
+
+
+#endif // FILE_H

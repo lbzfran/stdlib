@@ -40,32 +40,33 @@ int main(void)
     FileDelete(&arena, path5);
     //FileDelete(&arena, path3);
     FileWrite(&arena, path3, content);
-    FileProperties s = FileReadProperties(&arena, path3);
+    FileProperties s = FileReadProperties(&arena, path4);
 
     printf("path test: ./test/\n");
     printf("s->perms: %lu\n", s.access);
     printf("s->isdir: %d\n", s.flags);
 
     StringData dirpath1 = {0};
-    StringNew(&dirpath1, "./test");
+    StringNew(&dirpath1, ".");
 
-    FileMakeDirectory(&arena, dirpath1);
-    FileDeleteDirectory(&arena, dirpath1);
+    //FileMakeDirectory(&arena, dirpath1);
+    //FileDeleteDirectory(&arena, dirpath1);
 
     // FileDelete(&arena, path3);
     FileRename(&arena, path3, path5);
 
-    // FileIterator iter = FileIterStart(dirpath1);
+    FileIterator iter = FileIterStart(&arena, dirpath1);
 
-    // printf("rootpath of iter: ");
-    // StringPrintn(iter.root);
+    printf("rootpath of iter: ");
+    StringPrintn(iter.root);
+    // StringPrintn(iter.entry);
 
-    // while (FileIterNext(&arena, iter, &path2))
-    // {
-    //     StringPrintn(path2);
-    // }
+    while (FileIterNext(&arena, &iter, &path2))
+    {
+        StringPrintn(path2);
+    }
 
-    // FileIterEnd(iter);
+    FileIterEnd(iter);
 
     /*LibClose(lib);*/
     ArenaFree(&arena);
