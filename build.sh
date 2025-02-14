@@ -3,7 +3,7 @@
 
 SRC="./src"
 LAYER_BASE="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
-LAYER_OS="$SRC/os/shared_linux.c $SRC/os/file_linux.c"
+LAYER_OS="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c"
 
 CC=gcc
 INC="-I./src"

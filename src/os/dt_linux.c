@@ -1,6 +1,6 @@
 
 #include <time.h>
-#include "time.h"
+#include "dt.h"
 
 DateTime
 TimeDenseToDate(DenseTime d)
@@ -80,7 +80,7 @@ TimeTMToDate(struct tm t, uint64 ms)
     DateTime res = {0};
 
     res.year = t.tm_year;
-    res.month = (uint8)tm.tm_mon;
+    res.month = (uint8)t.tm_mon;
     res.day = t.tm_mday;
     res.hour = t.tm_hour;
     res.min = t.tm_min;
@@ -94,28 +94,28 @@ DateTime
 TimeUniversal(void)
 {
     struct timespec sysTimeSpec;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &sysTime);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &sysTimeSpec);
 
     struct tm sysTime;
     gmtime_r(&sysTimeSpec.tv_sec, &sysTime);
 
     DateTime res = {
-        .year = tm.tm_year,
-        .month = (uint8)tm.tm_mon,
-        .day = tm.tm_mday,
-        .hour = tm.tm_hour,
-        .min = tm.tm_min,
-        .sec = tm.tm_sec,
+        .year = sysTime.tm_year,
+        .month = (uint8)sysTime.tm_mon,
+        .day = sysTime.tm_mday,
+        .hour = sysTime.tm_hour,
+        .min = sysTime.tm_min,
+        .sec = sysTime.tm_sec,
         .ms = sysTimeSpec.tv_nsec
     };
     return(res);
 }
 
 DateTime
-TimeUniversalToLocal(DateTime *t)
+TimeUniversalToLocal(DateTime t)
 {
     struct tm sysTime;
-    uint64 ms = TimeDateToTM(*t, &sysTime);
+    uint64 ms = TimeDateToTM(t, &sysTime);
     time_t univTime = mktime(&sysTime);
 
     struct tm localTime;
@@ -126,10 +126,10 @@ TimeUniversalToLocal(DateTime *t)
 }
 
 DateTime
-TimeLocalToUniversal(DateTime *t)
+TimeLocalToUniversal(DateTime t)
 {
     struct tm sysTime;
-    uint64 ms = TimeDateToTM(*t, &sysTime);
+    uint64 ms = TimeDateToTM(t, &sysTime);
     time_t localTime = mktime(&sysTime);
 
     struct tm univTime;
