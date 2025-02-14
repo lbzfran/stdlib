@@ -32,29 +32,7 @@ GetLastErrorAsString()
     return(res);
 }
 
-// local DateTime
-// SysToDateTime(SYSTEMTIME st)
-// {
-//     DateTime res = {0};
-//     res.year = st.wYear;
-//     res.month = (uint8)st.wMonth;
-//     res.day = st.wDay;
-//     res.hour = st.wHour;
-//     res.min = st.wMinute;
-//     res.sec = st.wSecond;
-//     res.ms = st.wMilliseconds;
-//     return(res);
-// }
 
-// local DenseTime
-// FileTimeToDense(FILETIME *ft)
-// {
-//     SYSTEMTIME systime = {0};
-//     FileTimeToSystemTime(ft, &systime);
-//     DateTime dt = SysToDateTime(systime);
-//     DenseTime res = DateTimeToDense(dt);
-//     return(res);
-// }
 
 StringData
 FileRead(Arena *arena, StringData filename)

@@ -12,7 +12,8 @@ $LAYER_BASE = @(
 )
 $LAYER_OS = @(
     "$SRC/os/shared_win32.c",
-    "$SRC/os/file_win32.c"
+    "$SRC/os/file_win32.c",
+    "$SRC/os/time_win32.c"
 )
 
 # Define compiler and flags

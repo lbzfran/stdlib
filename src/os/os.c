@@ -34,7 +34,7 @@ int main(void)
 
     StringData content = FileRead(&arena, path2);
 
-    StringPrint(content);
+    //StringPrint(content);
     printf("size of content: %lu\n", content.size);
 
     FileDelete(&arena, path5);
@@ -67,6 +67,18 @@ int main(void)
     }
 
     FileIterEnd(iter);
+
+    /* TIME TEST */
+
+    DateTime uni = TimeUniversal();
+    DateTime now = TimeUniversalToLocal(uni);
+    printf("Time:\n");
+    printf("sec=%u; ms=%u\n", now.sec, now.ms);
+    printf("h=%u; min=%u\n", now.hour, now.min);
+    printf("%u.%u.%d\n", now.year, now.month, now.day);
+
+    DenseTime dt = TimeDateToDense(now);
+    printf("Dense=%llu\n", dt);
 
     /*LibClose(lib);*/
     ArenaFree(&arena);

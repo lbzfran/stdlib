@@ -15,11 +15,11 @@ typedef struct DateTime {
     int32 year;
 } DateTime;
 
-DateTime DenseToDateTime(DenseTime d);
-DenseTime DateTimeToDense(DateTime t);
+DateTime TimeDenseToDate(DenseTime d);
+DenseTime TimeDateToDense(DateTime t);
 
-DateTime TimeNowUniversal(void);
-DateTime TimeUniversalToLocal(DateTime *t);
-DateTime TimeLocalToUniversal(DateTime *t);
+DateTime TimeUniversal(void);
+DateTime TimeUniversalToLocal(DateTime t);
+DateTime TimeLocalToUniversal(DateTime t);
 
 #endif
