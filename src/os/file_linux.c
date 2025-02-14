@@ -163,7 +163,7 @@ FileDeleteDirectory(Arena *arena, StringData dirname)
 }
 
 FileIterator
-FileIterStart(StringData dpath)
+FileIterStart(Arena *arena, StringData dpath)
 {
     FileIterator res = {0};
     DIR *dirhandle = opendir((char *)StringLiteral(dpath));
@@ -180,11 +180,11 @@ FileIterStart(StringData dpath)
 }
 
 bool32
-FileIterNext(Arena *arena, FileIterator iter, StringData *dst)
+FileIterNext(Arena *arena, FileIterator *iter, StringData *dst)
 {
     bool32 res = true;
 
-    struct dirent *ent = readdir(iter.handle);
+    struct dirent *ent = readdir(iter->handle);
     if (ent == NULL)
     {
         res = false;

@@ -24,6 +24,16 @@ StringLength(uint8 *str)
     return(size);
 }
 
+inline memory_index
+String16Length(uint16 *str)
+{
+    memory_index size = 0;
+
+    while (*(str + size) != '\0') { size++; }
+
+    return(size);
+}
+
 inline uint8
 CharLower(uint8 c)
 {
@@ -44,7 +54,7 @@ uint8*
 StringNewLen(StringData* sd, void *str, memory_index size)
 {
     sd->buf = (str) ? (uint8 *)(str) : (uint8 *)"\0";
-    sd->size = ClampDown(size, StringLength((uint8 *)str));
+    sd->size = size;
     /*sd->size = size;*/
 
     return(sd->buf);
@@ -64,6 +74,23 @@ StringNewRange(StringData *sd, uint8 *first, uint8 *last_optional)
     sd->buf = first;
     sd->size = (memory_index)(last_optional - first);
     return(sd->buf);
+}
+
+String16Data
+String16NewLen(String16Data* sd, void *str, memory_index size)
+{
+    sd->buf = (str) ? (uint16 *)(str) : (uint16 *)"\0";
+    sd->size = size;
+
+    return(*sd);
+}
+
+String16Data
+String16New(String16Data* sd, void *str)
+{
+    String16Data res = String16NewLen(sd, str, String16Length(str));
+
+    return(res);
 }
 
 // NOTE(liam): ability to get the struct of an existing 'String' datatype.

@@ -48,6 +48,7 @@ enum {
 // NOTE(liam): helpers
 void MemoryCopy(void *dst, void *src, memory_index size);
 memory_index StringLength(uint8 *str);
+memory_index String16Length(uint16 *str);
 uint8 CharUpper(uint8 c);
 uint8 CharLower(uint8 c);
 
@@ -59,6 +60,9 @@ uint8 CharLower(uint8 c);
 uint8* StringNewLen(StringData *sd, void *str, memory_index size);
 uint8* StringNew(StringData *sd, void *str);
 uint8* StringNewRange(StringData *sd, uint8 *first, uint8 *last_optional);
+
+String16Data String16NewLen(String16Data *sd, void *str, memory_index size);
+String16Data String16New(String16Data *sd, void *str);
 
 // NOTE(liam): manips
 void StringSlice(StringData *dst, StringData src, memory_index first, memory_index last);

@@ -20,7 +20,7 @@ int main(void)
     StringNew(&path2, "./README.md");
     StringNew(&path3, "./copy_of_README.md");
     StringNew(&path4, "./test/");
-    StringNew(&path5, "./newcopy.md");
+    StringNew(&path5, "./newwercopy.md");
 
     /* DLL TEST */
     /*void* lib = LibOpen(path);*/
@@ -37,27 +37,31 @@ int main(void)
     StringPrint(content);
     printf("size of content: %lu\n", content.size);
 
+    FileDelete(&arena, path5);
+    //FileDelete(&arena, path3);
     FileWrite(&arena, path3, content);
-    FileProperties s = FileReadProperties(&arena, path3);
+    FileProperties s = FileReadProperties(&arena, path4);
 
     printf("path test: ./test/\n");
     printf("s->perms: %lu\n", s.access);
     printf("s->isdir: %d\n", s.flags);
 
     StringData dirpath1 = {0};
-    StringNew(&dirpath1, "./src/base");
+    StringNew(&dirpath1, ".");
 
     //FileMakeDirectory(&arena, dirpath1);
     //FileDeleteDirectory(&arena, dirpath1);
 
-    FileDelete(&arena, path3);
-    //FileRename(&arena, path3, path5);
-    FileIterator iter = FileIterStart(dirpath1);
+    // FileDelete(&arena, path3);
+    FileRename(&arena, path3, path5);
+
+    FileIterator iter = FileIterStart(&arena, dirpath1);
 
     printf("rootpath of iter: ");
     StringPrintn(iter.root);
+    // StringPrintn(iter.entry);
 
-    while (FileIterNext(&arena, iter, &path2))
+    while (FileIterNext(&arena, &iter, &path2))
     {
         StringPrintn(path2);
     }
