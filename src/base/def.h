@@ -8,7 +8,7 @@
 // used for context-specific settings
 # if defined(_WIN32) || defined(_WIN64)
 #  define OS_WINDOWS 1
-# elif defined(__linux__) || defined(__gnu_linux__)
+# elif defined(__linux__) || defined(__gnu_linux__) || defined(__unix__)
 #  define OS_LINUX 1
 # elif defined(__APPLE__) && defined(__MACH__)
 # error "Unsupported Operating System."
@@ -32,10 +32,10 @@
 #  define COMPILER_CLANG 1
 # elif defined(__GNUC__)
 #  define COMPILER_GCC 1
-# elif define(__TINYC__)
+# elif defined(__TINYC__)
 #  define COMPILER_TCC 1
 # else
-#  error "Unsupported Compiler."
+/*#  error "Unsupported Compiler."*/
 # endif
 
 # if defined(OS_WINDOWS)
