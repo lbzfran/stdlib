@@ -1,13 +1,14 @@
 #!/bin/sh
 
-
 SRC="./src"
+BUILD_PLATFORM="${1:-"win32"}"
+BUILD_CORES=("base" "os")
+
 LAYER_BASE_LINUX="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
 LAYER_OS_LINUX="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c"
 
 LAYER_BASE_WIN32="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_win32.c $SRC/base/random.c"
 LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c"
-
 
 CC=gcc
 INC="-I./src"
@@ -18,9 +19,19 @@ FLAGS="${CFLAGS} ${INC} ${LD}"
 
 mkdir -p ./build
 
-$CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE_LINUX
+if [ "$BUILD_PLATFORM" = "win32" ]; then
+    if [[ $BUILD_CORES == *"base"* ]]; then
+        $CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE_WIN32
+    fi
 
-$CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
-$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
+    if [[ $BUILD_CORES == *"os"* ]]; then
+	$CC $FLAGS -fPIC -shared -o ./build/test.dll $SRC/os/dll_main.c
+	$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
+    fi
+elif [ "$BUILD_PLATFORM" = "linux" ]; then
+    $CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE_LINUX
+    $CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
+    $CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 
-#$CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
+    #$CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
+fi

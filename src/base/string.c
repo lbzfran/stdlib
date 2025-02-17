@@ -181,7 +181,10 @@ StringListPrint_(StringList l, FILE *stream, char end)
         if (l.first)
         {
             StringPrint_(l.first->str, stream);
-            putc(end, stream);
+            if (end)
+            {
+                putc(end, stream);
+            }
         }
     }
     else
@@ -191,7 +194,10 @@ StringListPrint_(StringList l, FILE *stream, char end)
                 current = current->next)
         {
             StringPrint_(current->str, stream);
-            putc(end, stream);
+            if (end)
+            {
+                putc(end, stream);
+            }
         }
     }
 }

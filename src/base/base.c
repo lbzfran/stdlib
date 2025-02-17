@@ -60,7 +60,7 @@ int main(void)
     /*StringPrintn(tmp);*/
 
     // TODO(liam): StringSplit not working as intended.
-    StringList nll = StringSplit(&local_arena, s_oldnews, ",");
+    StringList nll = StringSplit(&local_arena, s_oldnews, ",s");
     StringListPrintln(nll);
 
     printf("[Character Conversion]:\n");
