@@ -115,4 +115,4 @@ shared.h
 > This was actually very easy, and I'm, glad it wasn't too difficult abstracting
 > the shared library away in the struct. I did use some void pointers to
 > allow for the abstraction of the data type from the different OS's (since
-> they handle them differently).
+> they handle them differently)..

@@ -2,18 +2,25 @@
 
 
 SRC="./src"
-LAYER_BASE="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
-LAYER_OS="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c"
+LAYER_BASE_LINUX="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
+LAYER_OS_LINUX="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c"
+
+LAYER_BASE_WIN32="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_win32.c $SRC/base/random.c"
+LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c"
+
 
 CC=gcc
 INC="-I./src"
 CFLAGS="-Wall -g"
 LD="-lm"
 FLAGS="${CFLAGS} ${INC} ${LD}"
+#RFLAGS="-I ./include -L ./lib -lraylib -lopengl32 -lgdi32 -lwinmm"
 
 mkdir -p ./build
 
-$CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE
+$CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE_LINUX
 
 $CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
-$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE $LAYER_OS
+$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
+
+#$CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
