@@ -10,6 +10,10 @@ LAYER_OS_LINUX="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c"
 LAYER_BASE_WIN32="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_win32.c $SRC/base/random.c"
 LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c"
 
+LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"
+
+
+
 CC=gcc
 INC="-I./src"
 CFLAGS="-Wall -g"
@@ -33,5 +37,6 @@ elif [ "$BUILD_PLATFORM" = "linux" ]; then
     $CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
     $CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 
-    $CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
+    $CC $FLAGS -lxcb -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX
+    # $CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 fi
