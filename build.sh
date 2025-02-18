@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SRC="./src"
-BUILD_PLATFORM="${1:-"win32"}"
+BUILD_PLATFORM="${1:-"linux"}"
 BUILD_CORES=("base" "os")
 
 LAYER_BASE_LINUX="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
@@ -33,5 +33,5 @@ elif [ "$BUILD_PLATFORM" = "linux" ]; then
     $CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
     $CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 
-    #$CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
+    $CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 fi

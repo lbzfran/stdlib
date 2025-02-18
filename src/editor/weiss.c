@@ -6,7 +6,7 @@
 #include "base/base.h"
 #include "os/os.h"
 //#define RAYLIB_IMPLEMENTATION
-#include "raylib.h"
+#include <raylib.h>
 
 #define WEISS_TAB_AS_SPACES 1
 #define WEISS_TAB_STOP 4
@@ -38,15 +38,13 @@ enum {
     PieceType_Add
 };
 
-struct Piece
-{
+struct Piece {
     StringData *buf; // original or add
     uint32 start;
     uint32 length;
 };
 
-struct PieceTable
-{
+struct PieceTable {
     Piece *pieces;
     uint32 size;
     uint32 capacity;
@@ -65,8 +63,10 @@ void PieceTableAppend(Arena *arena, PieceTable *table, char *c)
     if (table->pieces == NULL && oriBuf == NULL)
     {
         // NOTE(liam): initialize original buffer with size of c.
-
+        table->pieces = PushArray(arena, sizeof(struct PieceTable));
+        oriBuf = PushStruct();
     }
+
 }
 
 
