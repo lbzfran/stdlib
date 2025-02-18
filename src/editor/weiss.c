@@ -28,6 +28,48 @@ typedef struct erow {
     int hl_open_comment;
 } erow;
 
+/*** piece table ds ***/
+// https://code.visualstudio.com/blogs/2018/03/23/text-buffer-reimplementation
+// https://cdacamar.github.io/data%20structures/algorithms/benchmarking/text%20editors/c++/editor-data-structures/
+// https://blog.jcoglan.com/2017/02/12/the-myers-diff-algorithm-part-1/
+
+enum {
+    PieceType_Original,
+    PieceType_Add
+};
+
+struct Piece
+{
+    StringData *buf; // original or add
+    uint32 start;
+    uint32 length;
+};
+
+struct PieceTable
+{
+    Piece *pieces;
+    uint32 size;
+    uint32 capacity;
+};
+
+StringData *oriBuf; // read-only buffer to original file doc.
+StringList *addBuf; // append-only buffer to temp file.
+
+void editorOpen(); // initializes oriBuf and addBuf.
+
+void processKey(); // append each valid key to addBuf.
+
+void PieceTableAppend(Arena *arena, PieceTable *table, char *c)
+{
+    // NOTE(liam): validate c
+    if (table->pieces == NULL && oriBuf == NULL)
+    {
+        // NOTE(liam): initialize original buffer with size of c.
+
+    }
+}
+
+
 struct editorConfig {
     int cx, cy; // cursor position
     int rx; // added ry to keep track of last farthest y
