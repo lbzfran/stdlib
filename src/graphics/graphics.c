@@ -18,22 +18,21 @@ const uint16 screenHeight = 720;
 #define WIDTH 300
 #define HEIGHT 100
 
-
-static xcb_gc_t getFontGC (xcb_connection_t *c,
+static xcb_gc_t getFontGC(xcb_connection_t *c,
         xcb_screen_t     *screen,
         xcb_window_t      window,
-        const char       *font_name );
+        const char       *font_name);
 
 
-static void drawText (xcb_connection_t *c,
+static void drawText(xcb_connection_t *c,
         xcb_screen_t     *screen,
         xcb_window_t      window,
         int16_t           x1,
         int16_t           y1,
-        const char       *label );
+        const char       *label);
 
 
-    static void
+static void
 testCookie (xcb_void_cookie_t cookie,
         xcb_connection_t *connection,
         char *errMessage )
@@ -46,7 +45,7 @@ testCookie (xcb_void_cookie_t cookie,
     }
 }
 
-    static void
+static void
 drawText (xcb_connection_t  *connection,
         xcb_screen_t     *screen,
         xcb_window_t      window,
@@ -54,7 +53,6 @@ drawText (xcb_connection_t  *connection,
         int16_t           y1,
         const char       *label )
 {
-
     /* get graphics context */
     xcb_gcontext_t gc = getFontGC (connection, screen, window, "fixed");
 
@@ -77,11 +75,11 @@ drawText (xcb_connection_t  *connection,
 }
 
 
-    static xcb_gc_t
-getFontGC (xcb_connection_t  *connection,
-        xcb_screen_t      *screen,
-        xcb_window_t       window,
-        const char        *font_name )
+static xcb_gc_t
+getFontGC(xcb_connection_t  *connection,
+          xcb_screen_t      *screen,
+          xcb_window_t       window,
+          const char        *font_name)
 {
     /* get font */
     xcb_font_t font = xcb_generate_id (connection);
@@ -91,7 +89,6 @@ getFontGC (xcb_connection_t  *connection,
             font_name );
 
     testCookie(fontCookie, connection, "can't open font");
-
 
     /* create graphics context */
     xcb_gcontext_t  gc            = xcb_generate_id (connection);
@@ -118,8 +115,7 @@ getFontGC (xcb_connection_t  *connection,
 }
 
 
-    int
-main ()
+int main(void)
 {
     /* get the connection */
     int screenNum;
@@ -129,9 +125,8 @@ main ()
         return -1;
     }
 
-
     /* get the current screen */
-    xcb_screen_iterator_t iter = xcb_setup_roots_iterator (xcb_get_setup (connection));
+    xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
 
     // we want the screen at index screenNum of the iterator
     for (int i = 0; i < screenNum; ++i) {
@@ -180,14 +175,15 @@ main ()
     xcb_generic_event_t  *event;
     while (1) { ;
         if ( (event = xcb_poll_for_event(connection)) ) {
-            switch (event->response_type & ~0x80) {
+            switch (event->response_type & ~0x80)
+            {
                 case XCB_EXPOSE:
                 {
-                    drawText (connection,
+                    drawText(connection,
                             screen,
                             window,
                             10, HEIGHT - 10,
-                            "Press ESC key to exit..." );
+                            "Press ESC key to exit...");
                 } break;
                 case XCB_KEY_RELEASE:
                 {
@@ -195,16 +191,18 @@ main ()
 
                     switch (kr->detail) {
                         /* ESC */
-                        case 9: {
-                                    free (event);
-                                    xcb_disconnect (connection);
-                                    return 0;
-                                }
+                        case 9:
+                        {
+                            free (event);
+                            xcb_disconnect(connection);
+                            return 0;
+                        }
                     }
-                    free (event);
+                    free(event);
                 }
             }
         }
     }
+
     return 0;
 }

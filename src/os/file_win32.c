@@ -71,12 +71,14 @@ FileRead(Arena *arena, StringData filename)
 
 
 bool32
-FileWriteList(Arena *arena, StringData filename, StringList data)
+FileWriteList(Arena *arena, StringData filename, StringList data, bool32 append_only)
 {
     bool32 res = true;
+
+    DWORD access_flags = (append_only ? FILE_APPEND_DATA : GENERIC_WRITE);
     String16Data fn_utf16 = StringConvert16(arena, filename);
     HANDLE file = CreateFileW(StringLiteral(fn_utf16),
-                                GENERIC_WRITE, 0, 0,
+                                access_flags, 0, 0,
                                 CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
                                 0);
     if (file == INVALID_HANDLE_VALUE)
@@ -136,7 +138,17 @@ FileWrite(Arena *arena, StringData filename, StringData data)
     StringNode node = {};
     StringList list = {};
     StringListPush_(&list, data, &node);
-    bool32 res = FileWriteList(arena, filename, list);
+    bool32 res = FileWriteList(arena, filename, list, false);
+    return(res);
+}
+
+bool32
+FileAppend(Arena *arena, StringData filename, StringData data)
+{
+    StringNode node = {};
+    StringList list = {};
+    StringListPush_(&list, data, &node);
+    bool32 res = FileWriteList(arena, filename, list, true);
     return(res);
 }
 

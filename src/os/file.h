@@ -37,8 +37,9 @@ typedef struct FileIterator {
 // NOTE(liam): FileRead is the only function that actually needs
 // nontemporary data to store the file content.
 StringData FileRead(Arena *arena, StringData fpath);
-bool32 FileWriteList(Arena *arena, StringData fpath, StringList data);
+bool32 FileWriteList(Arena *arena, StringData fpath, StringList data, bool32 append_only);
 bool32 FileWrite(Arena *arena, StringData fpath, StringData data);
+bool32 FileAppend(Arena *arena, StringData fpath, StringData data);
 FileProperties FileReadProperties(Arena *arena, StringData fpath);
 
 bool32 FileDelete(Arena *arena, StringData fpath);

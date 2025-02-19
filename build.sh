@@ -37,6 +37,7 @@ elif [ "$BUILD_PLATFORM" = "linux" ]; then
     $CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
     $CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 
-    $CC $FLAGS -lxcb -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX
+    # $CC $FLAGS -lxcb -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX
+    $CC $FLAGS -o ./build/piece $SRC/piece.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
     # $CC $FLAGS $RFLAGS -o ./build/editor $SRC/editor/weiss.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 fi

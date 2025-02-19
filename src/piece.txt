@@ -1,0 +1,63 @@
+
+
+add op: 1 new piece if appending to beginning/end. 2 if in between.
+delete op: w
+
+note: keep track of the latest indices to avoid heavy searching.
+note: keep track of current 'logical offset' (running total of lengths).
+
+table example:
+
+t = 1
+
+table
+> (original, 0, 20)
+
+visual
+['abcdefghijklmnopqrst']
+
+t = 2; add at i = 10, 5
+
+table
+(original, 0, 20)
+> (original, 0, 10)
+> (add, 0, 5)
+> (original, 10, 10)
+
+render
+(original, 0, 10)
+(add, 0, 5)
+(original, 10, 10)
+
+visual
+['abcdefghij','ABCDE','klmnopqrst']
+
+t = 2; del at i = 5, 3
+
+table
+(original, 0, 20)
+(original, 0, 10)
+(add, 0, 5)
+(original, 10, 10)
+> (original, 0, 5)
+> (original, 9, 2)
+
+render
+(original, 0, 5)
+(original, 9, 2)
+(add, 0, 5)
+(original, 10, 10)
+
+visual
+['abcde','ij','ABCDE','klmnopqrst']
+
+t = 3; add at i = 10, 5
+
+table
+(original, 0, 20)
+(original, 0, 10)
+(add, 0, 5)
+(original, 10, 10)
+(original, 0, 5)
+(original, 8, 2)
+> (add, 0, 5)

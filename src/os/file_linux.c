@@ -38,13 +38,16 @@ FileRead(Arena *arena, StringData fpath)
     return(res);
 }
 
+// TODO(liam): add append mode file open.
 
 bool32
-FileWriteList(Arena *arena, StringData fpath, StringList data)
+FileWriteList(Arena *arena, StringData fpath, StringList data, bool32 append_only)
 {
     bool32 res = true;
 
-    int file = open((char *)StringLiteral(fpath), O_WRONLY | O_CREAT,
+    // NOTE(liam): added support for append-only mode.
+    int access_flags = O_WRONLY | O_CREAT | (append_only ? O_APPEND : 0);
+    int file = open((char *)StringLiteral(fpath), access_flags,
                     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (!file)
     {
@@ -89,7 +92,17 @@ FileWrite(Arena *arena, StringData fpath, StringData data)
     StringNode node = {};
     StringList list = {};
     StringListPush_(&list, data, &node);
-    bool32 res = FileWriteList(arena, fpath, list);
+    bool32 res = FileWriteList(arena, fpath, list, false);
+    return(res);
+}
+
+bool32
+FileAppend(Arena *arena, StringData fpath, StringData data)
+{
+    StringNode node = {};
+    StringList list = {};
+    StringListPush_(&list, data, &node);
+    bool32 res = FileWriteList(arena, fpath, list, true);
     return(res);
 }
 
