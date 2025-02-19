@@ -1,6 +1,7 @@
 
 #include "base/base.h"
 #include "os/os.h"
+#include <stdio.h>
 
 // NOTE(liam): the piece ds here.
 
@@ -11,7 +12,7 @@ typedef struct Piece {
 } Piece;
 
 typedef struct PieceTable {
-    StringData origBuf;
+    /*StringData origBuf;*/
     uint32 origSize;
 
     FILE *addBuf;
@@ -21,21 +22,18 @@ typedef struct PieceTable {
     uint32 size;
     uint32 capacity;
 } PieceTable;
-/*
- * example:
- *  t: O, start: 0, len: 10
- *  t: 1, start: 0, len: 5
- *  t: 0, start: 10, len: 22
- *
- */
 
-void PieceTableAdd(Arena *arena, PieceTable *tb, uint8 *content, uint32 offset)
+void PieceTableAdd(
+        Arena *arena,
+        PieceTable *tb,
+        uint8 *content,
+        uint32 offset)
 {
     // NOTE(liam): append new changes to addBuf.
-    fprintf(tb->addBuf, content);
+    fprintf(tb->addBuf, (char *)content);
 
     // NOTE(liam): get the current position of addBuf.
-    uint32 newAppendPos = (uint32)fseek(tb->addBuf, 0, SEEK_CUR);
+    /*uint32 newAppendPos = (uint32)fseek(tb->addBuf, 0, SEEK_CUR);*/
 
     // NOTE(liam): calculate size of content.
     uint32 newAppendSize = (uint32)StringLength(content);
@@ -44,63 +42,40 @@ void PieceTableAdd(Arena *arena, PieceTable *tb, uint8 *content, uint32 offset)
 
     Piece *oldP = (tb->pieces);
     uint32 max = 0;
-    while (1)
-    {
-        // NOTE(liam): find the piece containing the given offset.
 
-        oldP++;
-    }
-
-    Piece PreP = {
-        .type = 0,
-        .start = oldP.start,
-    };
-
-    // NOTE(liam): find piece to modify.
-    Piece p = {
-        .type = 1,
-        .start = start_pos,
-        .length = size
-    };
-
-    Piece PostP = {
-        .type = 0,
-        .start = (PreP.start + PreP.length),
-        .length = ...
-    };
-
-    *(tb->pieces + size++) = p;
-    *(tb->pieces + size++) = PostP;
+    Piece *newPieces = PushArray(arena, Piece, 3);
 }
 
-void PieceTableDelete(PieceTable *tb, uint32 start_pos, uint32 length)
-{
-    Piece p = {
-        .type = 0,
-        .start = start_pos,
-        .length = length
-    };
+/*void PieceTableDelete(PieceTable *tb, uint32 start_pos, uint32 length)*/
+/*{*/
+/*    Piece p = {*/
+/*        .type = 0,*/
+/*        .start = start_pos,*/
+/*        .length = length*/
+/*    };*/
+/**/
+/*    *(tb->pieces + tb->size++) = p;*/
+/*}*/
 
-    *(tb->pieces + tb->size++) = p;
-}
-
-uint8 PieceTableIndex(PieceTable tb, uint32 idx)
-{
-    uint8 res = 0;
-    uint32 j = 0;
-    while (1)
-    {
-        Piece p = *(tb->pieces + j);
-        if (idx - p.start < p.length)
-        {
-            idx = idx - p.start;
-            res = *(p.buf + idx);
-            break;
-        }
-        j++;
-    }
-    return res;
-}
+/*uint8 PieceTableIndex(PieceTable tb, uint32 logOffset)*/
+/*{*/
+/*    // NOTE(liam): returns the character at the given logical offset*/
+/*    // of the piece table.*/
+/*    uint8 res = 0;*/
+/*    uint32 j = 0;*/
+/*    for (uint32 i = 0; i < tb.size; i++)*/
+/*    {*/
+/*        StringData res = {0};*/
+/*        Piece p = *(tb.pieces + i);*/
+/**/
+/*        uint8 *localBuf = p.type ? tb.addBuf : tb.origBuf;*/
+/**/
+/*        StringPrefix(&res, (tb.addBuf + p.start), p.length);*/
+/*        logOffset += p.length;*/
+/**/
+/*    }*/
+/*    return res;*/
+/*}*/
 
 void PieceTablePrint(PieceTable tb)
 {
@@ -110,13 +85,18 @@ void PieceTablePrint(PieceTable tb)
         StringData res = {0};
         Piece p = *(tb.pieces + i);
 
-        uint8 *localBuf = p.type ? tb.addBuf : tb.origBuf;
+        /*uint8 *localBuf = p.type ? tb.addBuf : tb.origBuf;*/
 
-        StringPrefix(&res, (tb.addBuf + p.start), p.length);
+        /*StringPrefix(&res, (localBuf + p.start), p.length);*/
         logOffset += p.length;
 
         StringPrint(res);
     }
+}
+
+void PieceTableFree(PieceTable *tb)
+{
+    fclose(tb->addBuf);
 }
 
 int main(int argc, char **argv)
@@ -127,21 +107,22 @@ int main(int argc, char **argv)
     {
         return 1;
     }
+
     StringData fn = {0};
     StringNew(&fn, argv[1]);
 
-    origBuf = FileRead(&arena, fn);
-    if (!origBuf.size)
-    {
-        return 1;
-    }
+    StringData origBuf = FileRead(&arena, fn);
+    /*StringPrintn(origBuf);*/
 
-    // NOTE(liam): not cross platform code, yet.
-    FILE *addPtr = fopen("tmp_weiss_buf", "a+");
+    StringData p[3] = {0};
 
-    PieceTable tb = {0};
-    PieceTableAppend(origBuf.buf, 0, origBuf.size);
+    StringSlice(&p[0], origBuf, 0, 10);
+    StringNew(&p[1], "cowabunga");
+    StringSlice(&p[2], origBuf, 10, 20);
 
+    StringPrintn(p[0]);
+    StringPrintn(p[1]);
+    StringPrintn(p[2]);
 
     ArenaFree(&arena);
     return 0;

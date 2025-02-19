@@ -33,9 +33,14 @@ if [ "$BUILD_PLATFORM" = "win32" ]; then
 	$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
     fi
 elif [ "$BUILD_PLATFORM" = "linux" ]; then
-    $CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE_LINUX
-    $CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
-    $CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
+    if [[ $BUILD_CORES == *"base"* ]]; then
+        $CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE_LINUX
+    fi
+
+    if [[ $BUILD_CORES == *"os"* ]]; then
+        $CC $FLAGS -fPIC -shared -o ./build/libtest.so $SRC/os/dll_main.c
+        $CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
+    fi
 
     # $CC $FLAGS -lxcb -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX
     $CC $FLAGS -o ./build/piece $SRC/piece.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
