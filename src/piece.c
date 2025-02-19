@@ -94,6 +94,20 @@ void PieceTablePrint(PieceTable tb)
     }
 }
 
+void bufferIndex(FILE *f, char *buf, int idx, int size)
+{
+    if (fseek(f, idx, SEEK_SET) != 0)
+    {
+        perror("Error seeking file");
+    }
+
+    size_t bytesRead = fread(buf, sizeof(*buf), size, f);
+    if ((bytesRead != size) && (!feof(f)))
+    {
+        perror("Error reading file");
+    }
+}
+
 void PieceTableFree(PieceTable *tb)
 {
     fclose(tb->addBuf);
@@ -108,20 +122,32 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    StringData fn = {0};
-    StringNew(&fn, argv[1]);
+    StringData fn[2];
+    StringNew(&fn[0], argv[1]);
+    StringNew(&fn[1], argv[2]);
 
-    StringData origBuf = FileRead(&arena, fn);
-    /*StringPrintn(origBuf);*/
+    StringData origBuf = FileRead(&arena, fn[0]);
+    FILE *addBuf = fopen((char *)StringLiteral(fn[1]), "a+");
+
+    uint32 lastlen = 0;
+    uint32 logicalOffset = 0;
 
     StringData p[3] = {0};
 
-    StringSlice(&p[0], origBuf, 0, 10);
+    StringSlice(&p[0], origBuf, 0, 10 - 1);
+    lastlen = 10;
+
     StringNew(&p[1], "cowabunga");
-    StringSlice(&p[2], origBuf, 10, 20);
+    fprintf(addBuf, (char *)StringLiteral(p[1]));
+
+
+    StringSlice(&p[2], origBuf, lastlen, lastlen + 10 - 1);
 
     StringPrintn(p[0]);
-    StringPrintn(p[1]);
+    char buf[60];
+    bufferIndex(addBuf, buf, 0, 9);
+    printf("%s\n", buf);
+
     StringPrintn(p[2]);
 
     ArenaFree(&arena);
