@@ -71,21 +71,17 @@ memory_index PieceTableCheckIndex(PieceTable pt, memory_index offset)
     // return the idx position of the piece that contains
     // that offset, or 0 if the idx is at the start or end
     // of a piece.
-    memory_index res = 0;
+    memory_index res = 1;
 
     uint32 logOffset = 0;
     for (uint32 i = 0; i < pt.size; i++)
     {
         Piece p = *(pt.pieces + i);
 
-        if (logOffset + p.length > offset)
-        {
-            res = (offset == logOffset ? 0 : i);
-            break;
-        }
 
         logOffset += p.length;
     }
+    printf("total logical offset: %d\n", logOffset);
 
     return res;
 }
@@ -141,6 +137,7 @@ void PieceTablePush(Arena *arena,
 
     // NOTE(liam): check if offset overlaps with a piece.
     memory_index overlapIdx = PieceTableCheckIndex(*pt, offset);
+    printf("this is the overlap idx: %lu.\n", overlapIdx);
     if (overlapIdx)
     {
         printf("im in here\n");
@@ -200,27 +197,33 @@ void PieceTablePush(Arena *arena,
 
 void PieceTablePrint(PieceTable tb)
 {
+    uint8 buf[1024] = {0};
     uint32 origSize = 0;
     uint32 addSize = 0;
     for (uint32 i = 0; i < tb.size; i++)
     {
-        StringData res = {0};
         Piece p = *(tb.pieces + i);
+        StringData tmp = {0};
 
         if (p.type)
         {
-            res = BufSlice(&tb.addBuf, addSize + p.start, addSize + p.length - 1);
+            tmp = BufSlice(&tb.addBuf, addSize + p.start, addSize + p.length - 1);
+
+            MemoryCopy(&tmp.buf, (buf + p.start), p.length);
+
             addSize += p.length;
         }
         else
         {
-            StringSlice(&res, tb.origBuf, origSize + p.start, origSize + p.length - 1);
+            StringSlice(&tmp, tb.origBuf, origSize + p.start, origSize + p.length - 1);
+
+            MemoryCopy(&tmp.buf, (buf + p.start), p.length);
             origSize += p.length;
         }
 
-        StringPrint(res);
     }
-    putc('\n', stdout);
+
+    printf("%s\n", buf);
 }
 
 void FileIndex(FILE *f, char *buf, int idx, int size)
