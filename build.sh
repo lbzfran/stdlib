@@ -45,5 +45,5 @@ elif [ "$BUILD_PLATFORM" = "linux" ]; then
     fi
 
     # $CC $FLAGS -lxcb -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX
-    $CC $FLAGS -o ./build/piece $SRC/piece.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
+    $CC $FLAGS -o ./build/gap $SRC/gap.c $LAYER_BASE_LINUX $LAYER_OS_LINUX
 fi

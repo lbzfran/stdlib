@@ -164,37 +164,6 @@ void PieceTablePush(Arena *arena,
 
 }
 
-/*void PieceTableDelete(PieceTable *tb, uint32 start_pos, uint32 length)*/
-/*{*/
-/*    Piece p = {*/
-/*        .type = 0,*/
-/*        .start = start_pos,*/
-/*        .length = length*/
-/*    };*/
-/**/
-/*    *(tb->pieces + tb->size++) = p;*/
-/*}*/
-
-/*uint8 PieceTableIndex(PieceTable tb, uint32 logOffset)*/
-/*{*/
-/*    // NOTE(liam): returns the character at the given logical offset*/
-/*    // of the piece table.*/
-/*    uint8 res = 0;*/
-/*    uint32 j = 0;*/
-/*    for (uint32 i = 0; i < tb.size; i++)*/
-/*    {*/
-/*        StringData res = {0};*/
-/*        Piece p = *(tb.pieces + i);*/
-/**/
-/*        uint8 *localBuf = p.type ? tb.addBuf : tb.origBuf;*/
-/**/
-/*        StringPrefix(&res, (tb.addBuf + p.start), p.length);*/
-/*        logOffset += p.length;*/
-/**/
-/*    }*/
-/*    return res;*/
-/*}*/
-
 void PieceTablePrint(PieceTable tb)
 {
     uint8 buf[1024] = {0};
