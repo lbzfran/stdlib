@@ -1,5 +1,3 @@
-
-
 add op: 1 new piece if appending to beginning/end. 2 if in between.
 delete op: w
 

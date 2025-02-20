@@ -60,6 +60,9 @@ uint8 CharLower(uint8 c);
 uint8* StringNewLen(StringData *sd, void *str, memory_index size);
 uint8* StringNew(StringData *sd, void *str);
 uint8* StringNewRange(StringData *sd, uint8 *first, uint8 *last_optional);
+StringData StringDataNewLen(void *str, memory_index size);
+StringData StringDataNew(void *str);
+StringData StringDataNewRange(uint8 *first, uint8 *last_optional);
 
 String16Data String16NewLen(String16Data *sd, void *str, memory_index size);
 String16Data String16New(String16Data *sd, void *str);

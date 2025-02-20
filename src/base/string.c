@@ -76,6 +76,32 @@ StringNewRange(StringData *sd, uint8 *first, uint8 *last_optional)
     return(sd->buf);
 }
 
+StringData
+StringDataNewLen(void *str, memory_index size)
+{
+    StringData res = {0};
+    res.buf = (str) ? (uint8 *)(str) : (uint8 *)"\0";
+    res.size = size;
+    return(res);
+}
+
+StringData
+StringDataNew(void *str)
+{
+    StringData res = StringDataNewLen(str, StringLength(str));
+
+    return(res);
+}
+
+StringData
+StringDataNewRange(uint8 *first, uint8 *last_optional)
+{
+    StringData res = {0};
+    res.buf = first;
+    res.size = (memory_index)(last_optional - first);
+    return(res);
+}
+
 String16Data
 String16NewLen(String16Data* sd, void *str, memory_index size)
 {

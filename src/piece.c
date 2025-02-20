@@ -11,39 +11,160 @@ typedef struct Piece {
     uint32 length; // relative to offset.
 } Piece;
 
-typedef struct PieceTable {
-    /*StringData origBuf;*/
-    uint32 origSize;
+typedef struct AppendBuf {
+    uint8 *buf;
+    memory_index size;
+    memory_index capacity;
+} AppendBuf;
 
-    FILE *addBuf;
-    uint32 addSize;
+typedef struct PieceTable {
+    StringData origBuf; // single immutable string
+
+    AppendBuf addBuf;
 
     Piece *pieces;
     uint32 size;
     uint32 capacity;
 } PieceTable;
 
-void PieceTableAdd(
-        Arena *arena,
-        PieceTable *tb,
-        uint8 *content,
-        uint32 offset)
+#define BufIndex(ab, idx) (*((ab.buf) + (idx)))
+
+StringData BufSlice(AppendBuf *ab, memory_index offset, memory_index size)
 {
-    // NOTE(liam): append new changes to addBuf.
-    fprintf(tb->addBuf, (char *)content);
+    StringData res = {0};
 
-    // NOTE(liam): get the current position of addBuf.
-    /*uint32 newAppendPos = (uint32)fseek(tb->addBuf, 0, SEEK_CUR);*/
+    memory_index actualSize = ClampDown(size, ab->size);
+    StringNewLen(&res, (ab->buf + offset), actualSize);
 
-    // NOTE(liam): calculate size of content.
-    uint32 newAppendSize = (uint32)StringLength(content);
+    return res;
+}
+
+memory_index BufPush(Arena *arena, AppendBuf *ab, char *s)
+{
+    uint8 *s8 = (uint8 *)s;
+    memory_index stringSize = StringLength(s8);
+    memory_index res = stringSize;
+
+    if (stringSize + ab->size > ab->capacity)
+    {
+        memory_index newCap = Max(ab->capacity * 2, Kilobytes(1));
+        uint8 *newBuf = PushArray(arena, uint8, newCap);
+        MemoryCopy(newBuf, ab->buf, ab->size);
+        ab->buf = newBuf;
+        ab->capacity = newCap;
+    }
+
+    uint8 *pos = (ab->buf + ab->size);
+    while (stringSize--)
+    {
+        *(pos++) = *(s8++);
+        ab->size++;
+    }
+    return res;
+}
+
+
+// TODO(liam): likely not working
+memory_index PieceTableCheckIndex(PieceTable pt, memory_index offset)
+{
+    // NOTE(liam): given a logical offset,
+    // return the idx position of the piece that contains
+    // that offset, or 0 if the idx is at the start or end
+    // of a piece.
+    memory_index res = 0;
 
     uint32 logOffset = 0;
+    for (uint32 i = 0; i < pt.size; i++)
+    {
+        Piece p = *(pt.pieces + i);
 
-    Piece *oldP = (tb->pieces);
-    uint32 max = 0;
+        if (logOffset + p.length > offset)
+        {
+            res = (offset == logOffset ? 0 : i);
+            break;
+        }
 
-    Piece *newPieces = PushArray(arena, Piece, 3);
+        logOffset += p.length;
+    }
+
+    return res;
+}
+
+void PieceTableSet(Arena *arena,
+                   PieceTable *pt,
+                   memory_index length)
+{
+    // add the first piece in the table.
+    if (pt->size + 1 > pt->capacity)
+    {
+        pt->capacity = 64;
+        pt->pieces = PushArray(arena, Piece, pt->capacity);
+    }
+
+    Piece firstPiece = {0};
+
+    firstPiece.start = 0;
+    firstPiece.length = length;
+
+    *(pt->pieces) = firstPiece;
+    pt->size = 1;
+}
+
+void PieceTablePush(Arena *arena,
+                    PieceTable *pt,
+                    char *content,
+                    memory_index offset)
+{
+    // NOTE(liam): immediately append new content to addBuf.
+    memory_index contentSize = BufPush(arena, &pt->addBuf, content);
+
+    // NOTE(liam): piece array could receive up to 2 new pieces
+    // as a result of this insertion, so we're adjusting for the
+    // worst case.
+    if (pt->size + 2 > pt->capacity)
+    {
+        memory_index newCap = Max(pt->capacity * 2, Kilobytes(1));
+        Piece *newPieces = PushArray(arena, Piece, newCap);
+        MemoryCopy(newPieces, pt->pieces, pt->size);
+        pt->pieces = newPieces;
+        pt->capacity = newCap;
+    }
+
+    Piece midPiece = {
+        .type = 1,
+        .start = offset,
+        .length = contentSize
+    };
+
+    // NOTE(liam): split old piece if necessary.
+    Piece splitP[2];
+
+    // NOTE(liam): check if offset overlaps with a piece.
+    memory_index overlapIdx = PieceTableCheckIndex(*pt, offset);
+    if (overlapIdx)
+    {
+        printf("im in here\n");
+        // NOTE(liam): split the overlapped piece.
+        Piece *p = pt->pieces + overlapIdx;
+
+        splitP[0].start = p->start;
+        splitP[0].length = offset;
+
+        splitP[1].start = offset;
+        splitP[1].length = p->length - offset;
+
+        *p = splitP[0];
+        *(pt->pieces + pt->size++) = midPiece;
+        *(pt->pieces + pt->size++) = splitP[1];
+    }
+    else
+    {
+        // NOTE(liam): no need to split, but will need to modify
+        *(pt->pieces + pt->size++) = midPiece;
+    }
+
+
+
 }
 
 /*void PieceTableDelete(PieceTable *tb, uint32 start_pos, uint32 length)*/
@@ -79,22 +200,30 @@ void PieceTableAdd(
 
 void PieceTablePrint(PieceTable tb)
 {
-    uint32 logOffset = 0;
+    uint32 origSize = 0;
+    uint32 addSize = 0;
     for (uint32 i = 0; i < tb.size; i++)
     {
         StringData res = {0};
         Piece p = *(tb.pieces + i);
 
-        /*uint8 *localBuf = p.type ? tb.addBuf : tb.origBuf;*/
-
-        /*StringPrefix(&res, (localBuf + p.start), p.length);*/
-        logOffset += p.length;
+        if (p.type)
+        {
+            res = BufSlice(&tb.addBuf, addSize + p.start, addSize + p.length - 1);
+            addSize += p.length;
+        }
+        else
+        {
+            StringSlice(&res, tb.origBuf, origSize + p.start, origSize + p.length - 1);
+            origSize += p.length;
+        }
 
         StringPrint(res);
     }
+    putc('\n', stdout);
 }
 
-void bufferIndex(FILE *f, char *buf, int idx, int size)
+void FileIndex(FILE *f, char *buf, int idx, int size)
 {
     if (fseek(f, idx, SEEK_SET) != 0)
     {
@@ -108,47 +237,30 @@ void bufferIndex(FILE *f, char *buf, int idx, int size)
     }
 }
 
-void PieceTableFree(PieceTable *tb)
-{
-    fclose(tb->addBuf);
-}
-
 int main(int argc, char **argv)
 {
     Arena arena = {0};
 
-    if (argc < 2)
-    {
-        return 1;
-    }
-
+    // management
     StringData fn[2];
-    StringNew(&fn[0], argv[1]);
-    StringNew(&fn[1], argv[2]);
+    StringNew(&fn[0], "oc");
+    StringNew(&fn[1], "tmp_weiss_buf");
 
+    //FileDelete(&arena, fn[1]);
     StringData origBuf = FileRead(&arena, fn[0]);
-    FILE *addBuf = fopen((char *)StringLiteral(fn[1]), "a+");
+    StringData addBuf = FileRead(&arena, fn[1]);
 
-    uint32 lastlen = 0;
-    uint32 logicalOffset = 0;
+    //FILE *addBuf = fopen((char *)StringLiteral(fn[1]), "a+");
+    PieceTable pt = {0};
 
-    StringData p[3] = {0};
+    // NOTE(liam): populate buffers.
+    pt.origBuf = origBuf;
+    BufPush(&arena, &pt.addBuf, (char *)StringLiteral(addBuf));
 
-    StringSlice(&p[0], origBuf, 0, 10 - 1);
-    lastlen = 10;
+    PieceTableSet(&arena, &pt, origBuf.size);
+    PieceTablePush(&arena, &pt, "howdy\n", 4);
 
-    StringNew(&p[1], "cowabunga");
-    fprintf(addBuf, (char *)StringLiteral(p[1]));
-
-
-    StringSlice(&p[2], origBuf, lastlen, lastlen + 10 - 1);
-
-    StringPrintn(p[0]);
-    char buf[60];
-    bufferIndex(addBuf, buf, 0, 9);
-    printf("%s\n", buf);
-
-    StringPrintn(p[2]);
+    PieceTablePrint(pt);
 
     ArenaFree(&arena);
     return 0;
