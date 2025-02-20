@@ -4,6 +4,9 @@
 #include <stdio.h>
 
 // NOTE(liam): the piece ds here.
+// NOTE(liam): if i want to keep going with this,
+// I should probably also make a balanced tree.
+// Try AVL or RedBlack.
 
 typedef struct Piece {
     uint8 type; // NOTE(liam): [0, 1]; 0 original, 1 add

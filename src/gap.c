@@ -3,6 +3,7 @@
 #include "os/os.h"
 #include <stdio.h>
 
+#define GAP_INITIAL_SIZE 512
 
 typedef struct GapBuf {
     uint32 left;
@@ -16,7 +17,6 @@ void GapGrow(Arena *arena, GapBuf *gb)
 {
     memory_index newCap = Max(gb->capacity * 2, 64);
     memory_index K = newCap - gb->capacity;
-    printf("Growing buffer! size from %lu to %lu\n", gb->capacity, newCap);
     char *newBuf = PushArray(arena, char, newCap);
     ArenaFillZero(newCap, newBuf);
 
@@ -28,8 +28,6 @@ void GapGrow(Arena *arena, GapBuf *gb)
     {
         *(newBuf + i + K) = *(gb->buf + i);
     }
-    /*MemoryCopy(newBuf, gb->buf, gb->left);*/
-    /*MemoryCopy(newBuf + K, gb->buf + gb->right, gb->capacity - gb->right);*/
 
     gb->right = gb->right + K;
     gb->buf = newBuf;
@@ -43,15 +41,42 @@ void GapInsert(Arena *arena, GapBuf *gb, char c)
     {
         GapGrow(arena, gb);
     }
-    gb->buf[gb->left] = c;
-    gb->left = gb->left + 1;
+    gb->buf[gb->left++] = c;
+}
+
+bool32 GapLoad(Arena* arena, GapBuf *gb, char *filename)
+{
+    bool32 res = false;
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        perror("");
+    }
+    else
+    {
+        fseek(file, 0, SEEK_END);
+        memory_index fileSize = (memory_index)ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        gb->capacity = fileSize + GAP_INITIAL_SIZE;
+        gb->buf = PushArray(arena, char, gb->capacity);
+
+        gb->left = fileSize;
+        gb->right = fileSize + GAP_INITIAL_SIZE;
+
+        fread(gb->buf, 1, fileSize, file);
+
+        fclose(file);
+    }
+
+    return res;
 }
 
 void GapDelete(GapBuf *gb)
 {
     if (gb->left != 0)
     {
-        gb->left--;
+        --gb->left;
     }
 }
 
@@ -59,9 +84,7 @@ void GapShiftLeft(GapBuf *gb)
 {
     if (gb->left != 0)
     {
-        gb->left--;
-        gb->right--;
-        gb->buf[gb->right] = gb->buf[gb->left];
+        gb->buf[--gb->right] = gb->buf[--gb->left];
     }
 }
 
@@ -69,9 +92,7 @@ void GapShiftRight(GapBuf *gb)
 {
     if (gb->right != 0)
     {
-        gb->left++;
-        gb->right++;
-        gb->buf[gb->left] = gb->buf[gb->right];
+        gb->buf[++gb->left] = gb->buf[++gb->right];
     }
 }
 
@@ -99,23 +120,25 @@ int main(void)
     Arena arena = {0};
     GapBuf b = {0};
 
-    GapInsert(&arena, &b, 'a');
-    GapBufPrint(b);
-    GapInsert(&arena, &b, 'b');
-    GapBufPrint(b);
-    GapInsert(&arena, &b, 'c');
-    GapBufPrint(b);
+    GapLoad(&arena, &b, "./src/piece.txt");
 
-    GapShiftLeft(&b);
-    GapShiftLeft(&b);
+    for (int i = 0; i < 50; i++)
+    {
+        GapShiftLeft(&b);
+    }
 
-    GapInsert(&arena, &b, 'd');
-    GapBufPrint(b);
-    GapInsert(&arena, &b, 'e');
-    GapBufPrint(b);
+    GapInsert(&arena, &b, 'A');
+    GapInsert(&arena, &b, 'B');
+    GapInsert(&arena, &b, 'C');
 
-    GapShiftRight(&b);
-    GapDelete(&b);
+    for (int i = 0; i < 20; i++)
+    {
+        GapShiftRight(&b);
+    }
+    for (int i = 0; i < 10; i++)
+    {
+        GapDelete(&b);
+    }
 
     GapBufPrint(b);
     ArenaFree(&arena);
