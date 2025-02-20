@@ -1,9 +1,10 @@
 #ifndef TERM_H
 #define TERM_H
+#include <termios.h>
 
-void die(const char *);
+void TermDie(const char *);
 
-void enableRawMode(void);
-void disableRawMode(void);
+void TermEnableRawMode(struct termios *);
+void TermDisableRawMode(struct termios *);
 
 #endif // TERM_H

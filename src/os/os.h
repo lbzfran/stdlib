@@ -5,5 +5,6 @@
 #include "file.h"
 #include "shared.h"
 #include "dt.h"
+#include "term.h"
 
 #endif

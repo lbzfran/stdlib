@@ -218,7 +218,7 @@ ArenaTemp
 ArenaScratchCreate(Arena* arena)
 {
     //TODO(liam): replace assertion.
-    Assert((arena->pos + sizeof(ArenaTemp) <= arena->size) && "requested temp alloc exceeds arena size.");
+    /*Assert((arena->pos + sizeof(ArenaTemp) <= arena->size) && "requested temp alloc exceeds arena size.");*/
 
     ArenaTemp temp = ArenaTempBegin(arena);
     return temp;

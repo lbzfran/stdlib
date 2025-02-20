@@ -1,17 +1,6 @@
 
-#include "base/base.h"
-#include "os/os.h"
+#include "gap.h"
 #include <stdio.h>
-
-#define GAP_INITIAL_SIZE 512
-
-typedef struct GapBuf {
-    uint32 left;
-    uint32 right;
-
-    char *buf;
-    memory_index capacity;
-} GapBuf;
 
 void GapGrow(Arena *arena, GapBuf *gb)
 {
@@ -96,7 +85,7 @@ void GapShiftRight(GapBuf *gb)
     }
 }
 
-void GapBufPrint(GapBuf gb)
+void GapPrint(GapBuf gb)
 {
     for (int i = 0; i < gb.left; i++)
     {
@@ -115,12 +104,12 @@ void GapBufPrint(GapBuf gb)
     putc('\n', stdout);
 }
 
-int main(void)
+int main2(void)
 {
     Arena arena = {0};
     GapBuf b = {0};
 
-    GapLoad(&arena, &b, "./src/piece.txt");
+    GapLoad(&arena, &b, "./README.md");
 
     for (int i = 0; i < 50; i++)
     {
@@ -140,7 +129,7 @@ int main(void)
         GapDelete(&b);
     }
 
-    GapBufPrint(b);
+    GapPrint(b);
     ArenaFree(&arena);
     return 0;
 }
