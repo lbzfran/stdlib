@@ -31,14 +31,15 @@ struct editorConfig {
     /*int px;*/
     /*int rowoff;*/
     /*int coloff;*/
-    int screenRows;
+    GapBuf buf;
+    int screenRows; // total rows available
     int screenCols;
     /*int numRows;*/
     /*erow *row;*/
 
     int dirty;
     int mode;
-    char *filename;
+    StringData filename;
     /*char statusMsg[80];*/
     /*time_t statusMsgTime;*/
     struct termios orig_termios;
@@ -54,21 +55,80 @@ int editorReadKey(void);
 
 struct abuf {
     char *b;
-    int len;
+    uint32 length;
+    uint32 capacity;
 };
 
 #define ABUF_INIT {NULL, 0}
 
-void abAppend(Arena *arena, struct abuf *ab, const char *s, int len)
+void abAppend(Arena *arena, struct abuf *ab, char *s, uint32 len)
 {
-    char *new = PushArray(arena, char, ab->len + len);
+    if (ab->length + len > ab->capacity)
+    {
+        uint32 newCap = Max(ab->length + len, ab->capacity * 2);
+        char *new = PushArray(arena, char, newCap);
+        for (uint32 i = 0; i < ab->length; i++)
+        {
+            *(new + i) = *(ab->b + i);
+        }
+        ab->b = new;
+    }
 
-    MemoryCopy(&new[ab->len], (void *)s, len);
-    ab->b = new;
-    ab->len += len;
+    /*MemoryCopy(&ab->b[ab->length], s, len);*/
+    for (uint32 i = 0; i < len; i++)
+    {
+        *(ab->b + ab->length + i) = *(s + i);
+    }
+    ab->length += len;
 }
 
 /*** append buf end ***/
+
+/*void editorDrawRows(struct abuf *ab)*/
+/*{*/
+/*    int y;*/
+/*    for (y = 0; y < E.screenRows; y++)*/
+/*    {*/
+/*        int filerow = y + E.rowoff;*/
+/*        if (filerow >= E.numRows) {*/
+/*            if (E.numRows == 0 && y == E.screenRows / 3)*/
+/*            {*/
+/*                char welcome[80];*/
+/*                int welcomelen = snprintf(welcome, sizeof(welcome),*/
+/*                        "weiss editor -- version 0.1.0");*/
+/*                if (welcomelen > E.screenCols)*/
+/*                {*/
+/*                    welcomelen = E.screenCols;*/
+/*                }*/
+/**/
+/*                int padding = (E.screenCols - welcomelen) / 2;*/
+/*                if (padding)*/
+/*                {*/
+/*                    abAppend(ab, "~", 1);*/
+/*                    padding--;*/
+/*                }*/
+/*                while (padding--) abAppend(ab, " ", 1);*/
+/**/
+/*                abAppend(ab, welcome, welcomelen);*/
+/*            }*/
+/*            else*/
+/*            {*/
+/*                abAppend(ab, "~", 1);*/
+/*            }*/
+/*        }*/
+/*        else*/
+/*        {*/
+/*            int len = E.row.size;*/
+/*            if (len > E.screencols) len = E.screencols;*/
+/*            abAppend(ab, E.row.chars, len);*/
+/*        }*/
+/**/
+/*        // NOTE(liam): Erase inline.*/
+/*        abAppend(ab, "\x1b[K", 3);*/
+        /*write(STDOUT_FILENO, "\r\n", 2);*/
+/*        abAppend(ab, "\r\n", 2);*/
+/*    }*/
+/*}*/
 
 void editorRefreshScreen(Arena *arena)
 {
@@ -80,20 +140,29 @@ void editorRefreshScreen(Arena *arena)
     /*write(STDOUT_FILENO, "\x1b[H", 3);*/
     abAppend(arena, &ab, "\x1b[?25l", 6);
     /*abAppend(&ab, "\x1b[2J", 4);*/
-    abAppend(arena, &ab, "\x1b[H", 3);
 
+    /*for (int y = 0; y < E.screenRows; y++)*/
+    /*{*/
+    /*    write(STDOUT_FILENO, "~\r\n", 3);*/
+    /*}*/
+    /**/
     /*editorDrawRows(&ab);*/
     /*editorDrawStatusBar(&ab);*/
     /*editorDrawMessageBar(&ab);*/
 
+    // TODO(liam): create a method that draws per row (splitting
+    // and resetting cursor by line).
+    abAppend(arena, &ab, E.buf.buf, E.buf.left);
+    abAppend(arena, &ab, (E.buf.buf + E.buf.right), E.buf.capacity - E.buf.right);
+
     char buf[32];
-    /*snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1,*/
-    /*                                          (E.rx - E.coloff) + 1);*/
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1,
+                                              E.cx + 1);
     abAppend(arena, &ab, buf, StringLength((uint8 *)buf));
-
     abAppend(arena, &ab, "\x1b[?25h", 6);
+    /*abAppend(arena, &ab, "\x1b[H", 3);*/
 
-    write(STDOUT_FILENO, ab.b, ab.len);
+    write(STDOUT_FILENO, ab.b, ab.length);
     ArenaScratchFree(tmp);
 }
 
@@ -132,6 +201,32 @@ int getCursorPosition(int *rows, int *cols)
     return 0;
 }
 
+void editorMoveCursor(int key)
+{
+    switch (key)
+    {
+        case ARROW_UP:
+        case ARROW_DOWN:
+        case ARROW_LEFT:
+        {
+            if (E.cx != 0)
+            {
+                E.cx--;
+                GapShiftLeft(&E.buf);
+            }
+        } break;
+        case ARROW_RIGHT:
+        {
+            if (E.cx != E.screenCols - 1)
+            {
+                E.cx++;
+                GapShiftRight(&E.buf);
+            }
+        } break;
+
+    }
+}
+
 int getWindowSize(int *rows, int *cols)
 {
     struct winsize ws;
@@ -153,32 +248,28 @@ int getWindowSize(int *rows, int *cols)
     }
 }
 
-void editorOpen(char *filename)
+void editorOpen(Arena *arena, char *filename)
 {
     // TODO(liam): fix this part
-    free(E.filename);
-    E.filename = strdup(filename);
+    E.filename = StringDataNew((uint8 *)filename);
 
+    GapLoad(arena, &E.buf, filename);
 
-    FILE *fp = fopen(filename, "r");
-    if (!fp) die("fopen");
+    /*editorSelectSyntaxHighlight();*/
 
-    editorSelectSyntaxHighlight();
+    /*char *line = NULL;*/
+    /*size_t linecap = 0;*/
+    /*ssize_t linelen;*/
+    /*while ((linelen = getline(&line, &linecap, fp)) != -1)*/
+    /*{*/
+    /*    while (linelen > 0 && (line[linelen - 1] == '\n' ||*/
+    /*                line[linelen - 1] == '\r'))*/
+    /*    { linelen--; }*/
+    /*    editorInsertRow(E.numRows, line, linelen);*/
+    /*}*/
+    /*E.dirty = 0;*/
 
-    char *line = NULL;
-    size_t linecap = 0;
-    ssize_t linelen;
-    while ((linelen = getline(&line, &linecap, fp)) != -1)
-    {
-        while (linelen > 0 && (line[linelen - 1] == '\n' ||
-                    line[linelen - 1] == '\r'))
-        { linelen--; }
-        editorInsertRow(E.numRows, line, linelen);
-    }
-
-    free(line);
-    fclose(fp);
-    E.dirty = 0;
+    /*free(line);*/
 }
 
 int editorReadKey(void)
@@ -267,7 +358,7 @@ int editorReadKey(void)
     }
 }
 
-void editorProcessKeypress(void)
+void editorProcessKeypress(Arena *arena)
 {
     static int quitTimes = 2;
     static int resetTimes = 2;
@@ -277,6 +368,9 @@ void editorProcessKeypress(void)
     {
         case '\r':
         {
+            GapInsert(arena, &E.buf, '\n');
+            E.cy = 0;
+            E.cx = 0;
             /*editorInsertNewline();*/
         } break;
         case CTRL_KEY('q'):
@@ -358,6 +452,7 @@ void editorProcessKeypress(void)
         {
             /*if (c == DEL_KEY) { editorMoveCursor(ARROW_RIGHT); }*/
             /*editorDelChar();*/
+            GapDelete(&E.buf);
         } break;
 
         case PAGE_UP:
@@ -389,7 +484,7 @@ void editorProcessKeypress(void)
         case ARROW_LEFT:
         case ARROW_RIGHT:
         {
-            /*editorMoveCursor(c);*/
+            editorMoveCursor(c);
         } break;
 
         /*case CTRL_KEY('l'):*/
@@ -404,6 +499,7 @@ void editorProcessKeypress(void)
                 for (unsigned int i = 0; i < 4; i++)
                 {
                     /*editorInsertChar(' ');*/
+                    GapInsert(arena, &E.buf, ' ');
                 }
                 break;
             }
@@ -411,6 +507,7 @@ void editorProcessKeypress(void)
         }
         default:
         {
+            GapInsert(arena, &E.buf, c);
             /*editorInsertChar(c);*/
         } break;
     }
@@ -421,7 +518,7 @@ void editorProcessKeypress(void)
 
 void editorInit()
 {
-    E.filename = NULL;
+    /*E.filename = NULL;*/
     E.alive = true;
 
     if (getWindowSize(&E.screenRows, &E.screenCols) == -1)
@@ -438,13 +535,13 @@ int main(int argc, char **argv)
     editorInit();
     if (argc >= 2)
     {
-        editorOpen(argv[1]);
+        editorOpen(&arena, argv[1]);
     }
 
     while (E.alive)
     {
-        editorProcessKeypress();
         editorRefreshScreen(&arena);
+        editorProcessKeypress(&arena);
     }
 
     TermDisableRawMode(&E.orig_termios);
