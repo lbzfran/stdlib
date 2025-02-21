@@ -2,8 +2,10 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 
+#include "base/arena.h"
 #include "term.h"
 
 void TermDie(const char *s)
@@ -55,3 +57,89 @@ void TermDisableRawMode(struct termios *tm)
     }
 }
 
+int getCursorPosition(int *rows, int *cols)
+{
+    char buf[32];
+    unsigned int i = 0;
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
+    while (i < sizeof(buf) - 1)
+    {
+        if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
+        if (buf[i] == 'R') break;
+        i++;
+    }
+    buf[i] = '\0';
+
+    if (buf[0] != '\x1b' || buf[1] != '[') return -1;
+    if (sscanf(&buf[2], "%d;%d", rows, cols) != 2) return -1;
+
+    return 0;
+}
+
+int getWindowSize(int *rows, int *cols)
+{
+    struct winsize ws;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+    {
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
+        {
+            return getCursorPosition(rows, cols);
+        }
+        /*editorReadKey();*/
+        return -1;
+    }
+    else
+    {
+        *cols = ws.ws_col;
+        *rows = ws.ws_row;
+        return 0;
+    }
+}
+
+void TermRenderAppend(Arena *arena, TermRenderBuf *rb, uint8 *s, uint32 len)
+{
+    if (rb->length + len > rb->capacity)
+    {
+        uint32 newCap = Max(rb->length + len, rb->capacity * 2);
+        char *new = PushArray(arena, char, newCap);
+        for (uint32 i = 0; i < rb->length; i++)
+        {
+            *(new + i) = *(rb->b + i);
+        }
+        rb->b = new;
+    }
+
+    for (uint32 i = 0; i < len; i++)
+    {
+        *(rb->b + rb->length + i) = *(s + i);
+    }
+    rb->length += len;
+}
+
+void TermRender(Arena *arena)
+{
+    ArenaTemp tmp = ArenaScratchCreate(arena);
+    TermRenderBuf = {0};
+
+    // NOTE(liam): hides the cursor during drawing.
+    abAppend(arena, &ab, "\x1b[?25l", 6);
+
+
+    // NOTE(liam): unhides cursor.
+    abAppend(arena, &ab, "\x1b[?25h", 6);
+
+    write(STDOUT_FILENO, ab.b, ab.length);
+    ArenaScratchFree(tmp);
+}
+
+void TermDrawMessageBar(Arena *arena, struct abuf *ab, StringData msg)
+{
+    abAppend(arena, ab, "\x1b[K", 3);
+    memory_index actualLen = msg.size > ;
+    if (msglen > E.screenCols) { msglen = E.screenCols; }
+    if (msglen && time(NULL) - E.statusMsgTime < 5)
+    {
+        abAppend(arena, ab, E.statusMsg, msglen);
+    }
+}
