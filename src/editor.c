@@ -27,14 +27,18 @@ enum editorKey {
 
 struct editorConfig {
     int cx, cy;
-    int rx; // added ry to keep track of last farthest y
+    int rx; // actual x of gap buffer.
     /*int px;*/
-    /*int rowoff;*/
-    /*int coloff;*/
+    int rowoff;
+    int coloff;
+
     GapBuf buf;
+    uint32 *lineStarts;
+    uint32 lineCount;
+
     int screenRows; // total rows available
     int screenCols;
-    /*int numRows;*/
+    int numRows;
     /*erow *row;*/
 
     int dirty;
@@ -46,7 +50,9 @@ struct editorConfig {
     bool32 alive;
 };
 
-struct editorConfig E;
+// TODO(liam): do
+
+static struct editorConfig E;
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 int editorReadKey(void);
@@ -84,80 +90,87 @@ void abAppend(Arena *arena, struct abuf *ab, char *s, uint32 len)
 
 /*** append buf end ***/
 
-/*void editorDrawRows(struct abuf *ab)*/
-/*{*/
-/*    int y;*/
-/*    for (y = 0; y < E.screenRows; y++)*/
-/*    {*/
-/*        int filerow = y + E.rowoff;*/
-/*        if (filerow >= E.numRows) {*/
-/*            if (E.numRows == 0 && y == E.screenRows / 3)*/
-/*            {*/
-/*                char welcome[80];*/
-/*                int welcomelen = snprintf(welcome, sizeof(welcome),*/
-/*                        "weiss editor -- version 0.1.0");*/
-/*                if (welcomelen > E.screenCols)*/
-/*                {*/
-/*                    welcomelen = E.screenCols;*/
-/*                }*/
-/**/
-/*                int padding = (E.screenCols - welcomelen) / 2;*/
-/*                if (padding)*/
-/*                {*/
-/*                    abAppend(ab, "~", 1);*/
-/*                    padding--;*/
-/*                }*/
-/*                while (padding--) abAppend(ab, " ", 1);*/
-/**/
-/*                abAppend(ab, welcome, welcomelen);*/
-/*            }*/
-/*            else*/
-/*            {*/
-/*                abAppend(ab, "~", 1);*/
-/*            }*/
-/*        }*/
-/*        else*/
-/*        {*/
-/*            int len = E.row.size;*/
-/*            if (len > E.screencols) len = E.screencols;*/
-/*            abAppend(ab, E.row.chars, len);*/
-/*        }*/
-/**/
-/*        // NOTE(liam): Erase inline.*/
-/*        abAppend(ab, "\x1b[K", 3);*/
-        /*write(STDOUT_FILENO, "\r\n", 2);*/
-/*        abAppend(ab, "\r\n", 2);*/
-/*    }*/
-/*}*/
+void editorDrawRow(struct abuf *ab)
+{
+}
+
+void editorScroll()
+{
+    E.rx = 0;
+    if (E.cy < E.numRows)
+    {
+        E.rx = E.cx;
+    }
+
+    if (E.cy < E.rowoff)
+    {
+        E.rowoff = E.cy;
+    }
+    if (E.cy >= E.rowoff + E.screenRows)
+    {
+        E.rowoff = E.cy - E.screenRows + 1;
+    }
+    if (E.rx < E.coloff)
+    {
+        E.coloff = E.rx;
+    }
+    if (E.rx >= E.coloff + E.screenCols)
+    {
+        E.coloff = E.rx - E.screenCols + 1;
+    }
+}
 
 void editorRefreshScreen(Arena *arena)
 {
-    /*editorScroll();*/
+    editorScroll();
     ArenaTemp tmp = ArenaScratchCreate(arena);
     struct abuf ab = ABUF_INIT;
 
-    /*write(STDOUT_FILENO, "\x1b[2J", 4);*/
+    write(STDOUT_FILENO, "\x1b[2J", 4);
     /*write(STDOUT_FILENO, "\x1b[H", 3);*/
     abAppend(arena, &ab, "\x1b[?25l", 6);
     /*abAppend(&ab, "\x1b[2J", 4);*/
 
-    /*for (int y = 0; y < E.screenRows; y++)*/
-    /*{*/
-    /*    write(STDOUT_FILENO, "~\r\n", 3);*/
-    /*}*/
-    /**/
-    /*editorDrawRows(&ab);*/
-    /*editorDrawStatusBar(&ab);*/
-    /*editorDrawMessageBar(&ab);*/
+    GapBuf gb = E.buf;
+    int rowCount = 0;
 
-    // TODO(liam): create a method that draws per row (splitting
-    // and resetting cursor by line).
-    abAppend(arena, &ab, E.buf.buf, E.buf.left);
-    abAppend(arena, &ab, (E.buf.buf + E.buf.right), E.buf.capacity - E.buf.right);
+    if (gb.capacity)
+    {
+        for (int i = 0; i < gb.capacity; i++)
+        {
+            if (i >= gb.left && i <= gb.right)
+            {
+                abAppend(arena, &ab, "_", 1);
+            }
+            else
+            {
+                char *c = (gb.buf + i);
+                if (*c == '\n')
+                {
+                    /*abAppend(arena, &ab, "\x1b[K", 3);*/
+                    /*write(STDOUT_FILENO, "\x1b[K", 3);*/
+                    if (rowCount >= E.rowoff && rowCount <= E.screenRows + E.rowoff)
+                    {
+                        abAppend(arena, &ab, "\r\n", 2);
+                    }
+                    rowCount++;
+                }
+                else
+                {
+                    if (rowCount >= E.rowoff && rowCount <= E.screenRows + E.rowoff)
+                    {
+                        abAppend(arena, &ab, c, 1);
+                    }
+                }
+            }
+        }
+    }
+    E.numRows = rowCount;
+    /*abAppend(arena, &ab, (gb.buf + gb.right), gb.capacity);*/
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1,
-                                              E.cx + 1);
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1,
+                                              (E.cx - E.coloff) + 1);
     abAppend(arena, &ab, buf, StringLength((uint8 *)buf));
     abAppend(arena, &ab, "\x1b[?25h", 6);
     /*abAppend(arena, &ab, "\x1b[H", 3);*/
@@ -206,24 +219,39 @@ void editorMoveCursor(int key)
     switch (key)
     {
         case ARROW_UP:
+        {
+
+        } break;
         case ARROW_DOWN:
+        {
+            /*while (E.buf.right != 0 && E.buf.buf[E.buf.right] != '\n')*/
+        } break;
         case ARROW_LEFT:
         {
-            if (E.cx != 0)
+            if (GapMoveLeft(&E.buf) && E.cx != 0)
             {
-                E.cx--;
-                GapShiftLeft(&E.buf);
+                /*E.cx--;*/
             }
         } break;
         case ARROW_RIGHT:
         {
-            if (E.cx != E.screenCols - 1)
+            if (GapMoveRight(&E.buf) && E.cx != E.screenRows - 2)
             {
-                E.cx++;
-                GapShiftRight(&E.buf);
+                /*E.cx++;*/
             }
         } break;
+    }
 
+    int margin = 7;
+
+    if (E.cy < E.rowoff + margin)
+    {
+        E.rowoff = E.cy - margin;
+        if (E.rowoff < 0) { E.rowoff = 0; }
+    }
+    else if (E.cy >= E.rowoff + E.screenRows - margin)
+    {
+        E.rowoff = E.cy - E.screenRows + margin + 1;
     }
 }
 
@@ -270,6 +298,19 @@ void editorOpen(Arena *arena, char *filename)
     /*E.dirty = 0;*/
 
     /*free(line);*/
+}
+
+void editorProcessNewLines()
+{
+
+    GapBuf gb = E.buf;
+    for (int i = 0; i < gb.left; i++)
+    {
+        if (gb.buf[i] == '\n')
+        {
+
+        }
+    }
 }
 
 int editorReadKey(void)
@@ -368,9 +409,10 @@ void editorProcessKeypress(Arena *arena)
     {
         case '\r':
         {
+            GapInsert(arena, &E.buf, '\r');
             GapInsert(arena, &E.buf, '\n');
-            E.cy = 0;
-            E.cx = 0;
+            /*E.cy = 0;*/
+            /*E.cx = 0;*/
             /*editorInsertNewline();*/
         } break;
         case CTRL_KEY('q'):
@@ -450,7 +492,7 @@ void editorProcessKeypress(Arena *arena)
         case CTRL_KEY('h'):
         case DEL_KEY:
         {
-            /*if (c == DEL_KEY) { editorMoveCursor(ARROW_RIGHT); }*/
+            if (c == DEL_KEY) { editorMoveCursor(ARROW_RIGHT); }
             /*editorDelChar();*/
             GapDelete(&E.buf);
         } break;
@@ -507,6 +549,7 @@ void editorProcessKeypress(Arena *arena)
         }
         default:
         {
+            /*GapMove(&E.buf, E.cx);*/
             GapInsert(arena, &E.buf, c);
             /*editorInsertChar(c);*/
         } break;
@@ -519,13 +562,14 @@ void editorProcessKeypress(Arena *arena)
 void editorInit()
 {
     /*E.filename = NULL;*/
+    E.buf = (GapBuf){ 0 };
     E.alive = true;
 
     if (getWindowSize(&E.screenRows, &E.screenCols) == -1)
     {
         TermDie("getWindowSize");
     }
-    /*E.screenRows -= 2;*/
+    E.screenRows -= 2;
 }
 
 int main(int argc, char **argv)

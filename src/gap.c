@@ -7,7 +7,6 @@ void GapGrow(Arena *arena, GapBuf *gb)
     memory_index newCap = Max(gb->capacity * 2, 64);
     memory_index K = newCap - gb->capacity;
     char *newBuf = PushArray(arena, char, newCap);
-    ArenaFillZero(newCap, newBuf);
 
     for (memory_index i = 0; i < gb->left; i++)
     {
@@ -61,28 +60,55 @@ bool32 GapLoad(Arena* arena, GapBuf *gb, char *filename)
     return res;
 }
 
-void GapDelete(GapBuf *gb)
+bool32 GapDelete(GapBuf *gb)
 {
+    bool32 res = true;
     if (gb->left != 0)
     {
         --gb->left;
     }
+    else
+    {
+        res = false;
+    }
+    return res;
 }
 
-void GapShiftLeft(GapBuf *gb)
+/*void GapMove(GapBuf *gb, int pos)*/
+/*{*/
+/*    (pos < gb->left) ? GapMoveLeft(gb, pos) : GapMoveRight(gb, pos);*/
+/*}*/
+
+bool32 GapMoveLeft(GapBuf *gb)
 {
+    bool32 res = true;
     if (gb->left != 0)
     {
-        gb->buf[--gb->right] = gb->buf[--gb->left];
+        gb->right--;
+        gb->buf[gb->right] = gb->buf[gb->left];
+        gb->left--;
     }
+    else
+    {
+        res = false;
+    }
+    return res;
 }
 
-void GapShiftRight(GapBuf *gb)
+bool32 GapMoveRight(GapBuf *gb)
 {
-    if (gb->right != 0)
+    bool32 res = true;
+    if (gb->right != gb->capacity)
     {
-        gb->buf[++gb->left] = gb->buf[++gb->right];
+        gb->left++;
+        gb->buf[gb->left] = gb->buf[gb->right];
+        gb->right++;
     }
+    else
+    {
+        res = false;
+    }
+    return res;
 }
 
 void GapPrint(GapBuf gb)
@@ -94,6 +120,12 @@ void GapPrint(GapBuf gb)
             putc(c, stdout);
         }
     }
+
+    for (int i = gb.left; i < gb.right; i++)
+    {
+        putc('_', stdout);
+    }
+
     for (int i = gb.right; i < gb.capacity; i++)
     {
         char c = *(gb.buf + i);
@@ -113,7 +145,7 @@ int main2(void)
 
     for (int i = 0; i < 50; i++)
     {
-        GapShiftLeft(&b);
+        GapMoveLeft(&b);
     }
 
     GapInsert(&arena, &b, 'A');
@@ -122,7 +154,7 @@ int main2(void)
 
     for (int i = 0; i < 20; i++)
     {
-        GapShiftRight(&b);
+        GapMoveRight(&b);
     }
     for (int i = 0; i < 10; i++)
     {

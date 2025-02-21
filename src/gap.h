@@ -15,7 +15,8 @@ typedef struct GapBuf {
 void GapGrow(Arena *arena, GapBuf *gb);
 void GapInsert(Arena *arena, GapBuf *gb, char c);
 bool32 GapLoad(Arena* arena, GapBuf *gb, char *filename);
-void GapDelete(GapBuf *gb);
-void GapShiftLeft(GapBuf *gb);
-void GapShiftRight(GapBuf *gb);
+bool32 GapDelete(GapBuf *gb);
+/*void GapMove(GapBuf *gb, int pos);*/
+bool32 GapMoveLeft(GapBuf *gb);
+bool32 GapMoveRight(GapBuf *gb);
 void GapPrint(GapBuf gb);
