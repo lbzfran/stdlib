@@ -16,7 +16,9 @@ void GapGrow(Arena *arena, GapBuf *gb);
 void GapInsert(Arena *arena, GapBuf *gb, char c);
 bool32 GapLoad(Arena* arena, GapBuf *gb, char *filename);
 bool32 GapDelete(GapBuf *gb);
-/*void GapMove(GapBuf *gb, int pos);*/
+void GapMove(GapBuf *gb, int pos);
 bool32 GapMoveLeft(GapBuf *gb);
 bool32 GapMoveRight(GapBuf *gb);
+void GapMovePosLeft(GapBuf *gb, int pos);
+void GapMovePosRight(GapBuf *gb, int pos);
 void GapPrint(GapBuf gb);

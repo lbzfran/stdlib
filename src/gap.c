@@ -74,10 +74,10 @@ bool32 GapDelete(GapBuf *gb)
     return res;
 }
 
-/*void GapMove(GapBuf *gb, int pos)*/
-/*{*/
-/*    (pos < gb->left) ? GapMoveLeft(gb, pos) : GapMoveRight(gb, pos);*/
-/*}*/
+void GapMove(GapBuf *gb, int pos)
+{
+    (pos < gb->left) ? GapMovePosLeft(gb, pos) : GapMovePosRight(gb, pos);
+}
 
 bool32 GapMoveLeft(GapBuf *gb)
 {
@@ -93,6 +93,16 @@ bool32 GapMoveLeft(GapBuf *gb)
         res = false;
     }
     return res;
+}
+
+void GapMovePosLeft(GapBuf *gb, int pos)
+{
+    while (pos < gb->left && GapMoveLeft(gb));
+}
+
+void GapMovePosRight(GapBuf *gb, int pos)
+{
+    while (pos > gb->left && GapMoveRight(gb));
 }
 
 bool32 GapMoveRight(GapBuf *gb)

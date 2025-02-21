@@ -136,7 +136,7 @@ void PieceTablePush(Arena *arena,
     };
 
     // NOTE(liam): split old piece if necessary.
-    Piece splitP[2];
+    Piece newPiece = {0};
 
     // NOTE(liam): check if offset overlaps with a piece.
     memory_index overlapIdx = PieceTableCheckIndex(*pt, offset);
@@ -145,17 +145,15 @@ void PieceTablePush(Arena *arena,
     {
         printf("im in here\n");
         // NOTE(liam): split the overlapped piece.
-        Piece *p = pt->pieces + overlapIdx;
+        Piece p = *(pt->pieces + overlapIdx);
 
-        splitP[0].start = p->start;
-        splitP[0].length = offset;
+        p.length = offset;
 
-        splitP[1].start = offset;
-        splitP[1].length = p->length - offset;
+        newPiece.start = offset;
+        newPiece.length = p.length - offset;
 
-        *p = splitP[0];
         *(pt->pieces + pt->size++) = midPiece;
-        *(pt->pieces + pt->size++) = splitP[1];
+        *(pt->pieces + pt->size++) = newPiece;
     }
     else
     {
@@ -169,7 +167,7 @@ void PieceTablePush(Arena *arena,
 
 void PieceTablePrint(PieceTable tb)
 {
-    uint8 buf[1024] = {0};
+    /*uint8 buf[1024] = {0};*/
     uint32 origSize = 0;
     uint32 addSize = 0;
     for (uint32 i = 0; i < tb.size; i++)
@@ -181,7 +179,7 @@ void PieceTablePrint(PieceTable tb)
         {
             tmp = BufSlice(&tb.addBuf, addSize + p.start, addSize + p.length - 1);
 
-            MemoryCopy(&tmp.buf, (buf + p.start), p.length);
+            StringPrint(tmp);
 
             addSize += p.length;
         }
@@ -189,7 +187,7 @@ void PieceTablePrint(PieceTable tb)
         {
             StringSlice(&tmp, tb.origBuf, origSize + p.start, origSize + p.length - 1);
 
-            MemoryCopy(&tmp.buf, (buf + p.start), p.length);
+            StringPrint(tmp);
             origSize += p.length;
         }
 
