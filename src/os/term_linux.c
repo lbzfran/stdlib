@@ -1,8 +1,13 @@
 
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+
 #include "base/base.h"
 #include "term.h"
 
 #include <termios.h>
+#include <ctype.h>
 #include <sys/ioctl.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -63,7 +68,7 @@ void TermDisableRawMode(struct termios *tm)
 int getCursorPosition(int *rows, int *cols)
 {
     char buf[32];
-    unsigned int i = 0;
+    uint32 i = 0;
     if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
     while (i < sizeof(buf) - 1)
     {
@@ -103,8 +108,10 @@ int getWindowSize(int *rows, int *cols)
 
 void TermSettingsInit(TermSettings *ts)
 {
+    ts->cx = 0;
+    ts->cy = 0;
     ts->alive = true;
-    /*ts->statusMsg = (StringData){0};*/
+    ts->filename = (StringData){0};
     ts->statusMsg[0] = '\0';
     ts->statusMsgTime = 0;
 
@@ -113,6 +120,73 @@ void TermSettingsInit(TermSettings *ts)
         TermDie("getWindowSize");
     }
     ts->screenRows -= 2;
+}
+
+char *TermPrompt(Arena *arena, TermSettings *ts, char *prompt, void (*callback)(char *, int))
+{
+    size_t bufsize = 128;
+    /*char *buf = malloc(bufsize);*/
+    char *buf = PushArray(arena, char, bufsize);
+
+    size_t buflen = 0;
+    buf[0] = '\0';
+
+    Swap(ts->cx, ts->prx);
+    Swap(ts->cy, ts->pry);
+
+    ts->cy = ts->screenRows + 1;
+    while (1)
+    {
+        ts->cx = buflen + 1;
+        TermSetStatusMessage(ts, prompt, buf);
+        TermRender(arena, ts);
+
+        int c = TermReadKey();
+        if (c == DEL_KEY || c == CTRL_KEY('h') || c == BACKSPACE)
+        {
+            if (buflen != 0) { buf[--buflen] = '\0'; }
+        }
+        else if (c == '\x1b')
+        {
+            TermSetStatusMessage(ts, "");
+            if (callback) { callback(buf, c); }
+            ArenaPop(arena, bufsize);
+            Swap(ts->cx, ts->prx);
+            Swap(ts->cy, ts->pry);
+            return NULL;
+        }
+        else if (c == '\r')
+        {
+            if (buflen != 0)
+            {
+                TermSetStatusMessage(ts, "");
+                if (callback) { callback(buf, c); }
+                Swap(ts->cx, ts->prx);
+                Swap(ts->cy, ts->pry);
+                return buf;
+            }
+        }
+        else if (!iscntrl(c) && c < 128)
+        {
+            if (buflen == bufsize - 1)
+            {
+                bufsize *= 2;
+                char *newBuf = PushArray(arena, char, bufsize);
+
+                char *dst = newBuf;
+                char *src = buf;
+                while (buflen--)
+                {
+                    *(dst++) = *(src++);
+                }
+                buf = newBuf;
+            }
+            buf[buflen++] = c;
+            buf[buflen] = '\0';
+        }
+
+        if (callback) { callback(buf, c); }
+    }
 }
 
 
@@ -138,19 +212,32 @@ void TermRenderAppend(Arena *arena, TermRenderBuf *rb, char *s, memory_index len
 
 void TermDrawStatusBar(Arena *arena, TermSettings *ts, TermRenderBuf *rb)
 {
+    TermRenderAppend(arena, rb, "\x1b[K", 3);
     TermRenderAppend(arena, rb, "\x1b[7m", 4);
-    char status[] = "coocoo";
-    int len = 7;
-    /*int len = snprintf(status, sizeof(status), "%.20s",*/
-            /*ts->filename.size ? (char *)StringLiteral(ts->filename) : "n/a");*/
+    char status[80], rstatus[80];
+    /*int len = 7;*/
+    int len = snprintf(status, sizeof(status), " %.20s",
+            ts->filename.size ? (char *)StringLiteral(ts->filename) : "n/a");
+    int rlen = snprintf(rstatus, sizeof(rstatus), "%d:%d ",
+                        ts->cy + 1, ts->cx + 1);
+
     if (len > ts->screenCols) len = ts->screenCols;
     TermRenderAppend(arena, rb, status, len);
     while (len < ts->screenCols)
     {
-        TermRenderAppend(arena, rb, " ", 1);
-        len++;
+        if (ts->screenCols - len == rlen)
+        {
+            TermRenderAppend(arena, rb, rstatus, rlen);
+            break;
+        }
+        else
+        {
+            TermRenderAppend(arena, rb, " ", 1);
+            len++;
+        }
     }
     TermRenderAppend(arena, rb, "\x1b[m", 3);
+    TermRenderAppend(arena, rb, "\r\n", 2);
 }
 
 void TermSetStatusMessage(TermSettings *ts, const char *fmt, ...)
@@ -168,7 +255,7 @@ void TermSetStatusMessage(TermSettings *ts, const char *fmt, ...)
 void TermDrawMessageBar(Arena *arena, TermSettings *ts, TermRenderBuf *rb)
 {
     TermRenderAppend(arena, rb, "\x1b[K", 3);
-    TermRenderAppend(arena, rb, " ", 1);
+    /*TermRenderAppend(arena, rb, " ", 1);*/
     int msglen = ts->msgLen;
     if (ts->msgLen > ts->screenCols) { msglen = ts->screenCols; }
     if (msglen && time(NULL) - ts->statusMsgTime < 5)
@@ -189,6 +276,7 @@ void TermRender(Arena *arena, TermSettings *ts)
 
     for (memory_index i = 0; i < ts->screenRows; i++)
     {
+        TermRenderAppend(arena, &rb, "\x1b[K", 3);
         TermRenderAppend(arena, &rb, "~", 1);
 
         TermRenderAppend(arena, &rb, "\r\n", 2);
@@ -208,6 +296,7 @@ void TermRender(Arena *arena, TermSettings *ts)
     write(STDOUT_FILENO, rb.b, rb.length);
     ArenaScratchFree(tmp);
 }
+
 
 
 int TermReadKey(void)
@@ -296,7 +385,7 @@ int TermReadKey(void)
     }
 }
 
-void TermProcessKeypress(TermSettings *ts)
+void TermProcessKeypress(Arena *arena, TermSettings *ts)
 {
     /*static int quitTimes = WEISS_QUIT_CONFIRM_COUNTER;*/
     /*static int resetTimes = WEISS_QUIT_CONFIRM_COUNTER;*/
@@ -381,7 +470,7 @@ void TermProcessKeypress(TermSettings *ts)
 
         case CTRL_KEY('f'):
         {
-            TermSetStatusMessage(ts, "");
+            TermPrompt(arena, ts, ":%s", NULL);
             /*editorFind();*/
         } break;
 

@@ -10,11 +10,11 @@ int main(void)
 
     TermEnableRawMode(&ts.orig_termios);
 
-    TermSetStatusMessage(&ts, "HELP: C-S = save | C-Q = quit | C-F = find");
+    TermSetStatusMessage(&ts, "HELP: C-Q = Quit");
     while (ts.alive)
     {
         TermRender(&arena, &ts);
-        TermProcessKeypress(&ts);
+        TermProcessKeypress(&arena, &ts);
     }
 
     TermDisableRawMode(&ts.orig_termios);

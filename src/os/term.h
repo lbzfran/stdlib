@@ -10,16 +10,18 @@ typedef struct TermRenderBuf {
 } TermRenderBuf;
 
 typedef struct TermSettings {
-    uint32 cx, cy;
+    int cx, cy;
+    int prx, pry;
 
-    uint32 screenRows;
-    uint32 screenCols;
+    int screenRows;
+    int screenCols;
 
     char statusMsg[80];
     uint32 msgLen;
     time_t statusMsgTime;
 
     bool32 alive;
+    StringData filename;
     struct termios orig_termios;
 } TermSettings;
 
@@ -53,7 +55,8 @@ void TermRenderAppend(Arena *arena, TermRenderBuf *rb, char *c, memory_index len
 void TermRender(Arena *arena, TermSettings *ts);
 
 int TermReadKey(void);
-void TermProcessKeypress(TermSettings *ts);
+void TermProcessKeypress(Arena *arena, TermSettings *ts);
+char *TermPrompt(Arena *arena, TermSettings *ts, char *prompt, void (*callback)(char *, int));
 
 void TermSetStatusMessage(TermSettings *ts, const char *fmt, ...);
 void TermDrawMessageBar(Arena *arena, TermSettings *ts, TermRenderBuf *rb);
