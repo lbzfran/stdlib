@@ -20,10 +20,10 @@ LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"
 
 CC=gcc
 INC="-I./src"
-CFLAGS="-Wall -g -fanalyzer -fsanitize=address -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_GNU_SOURCE -std=c11"
+C11FLAGS="-D_DEFAULT_SOURCE -D_BSD_SOURCE -D_GNU_SOURCE -std=c11"
+CFLAGS="-Wall -g -fanalyzer -fsanitize=address"
 LD="-lm"
-FLAGS="${CFLAGS} ${INC} ${LD}"
-#RFLAGS="-I ./include -L ./lib -lraylib -lopengl32 -lgdi32 -lwinmm"
+FLAGS="${CFLAGS} ${C11FLAGS} ${INC} ${LD}"
 
 mkdir -p ./build
 ctags -R ./src
