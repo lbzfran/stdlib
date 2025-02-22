@@ -56,17 +56,17 @@
 // aliases
 # define global     static
 # define local      static
-/*# define function   static*/
 
-# define c_linkage_begin extern "C" {
-# define c_linkage_end  }
-# define c_linkage extern "C"
+# define EXTERN_C_START extern "C" {
+# define EXTERN_C_END  }
+# define EXTERN_C extern "C"
 
 // some funny redefs
 # define AND &&
 # define OR ||
 # define NOT !
 # define elif else if
+# define is =
 
 # define true 1
 # define false 0
@@ -118,6 +118,14 @@ int ap_float(float a, float b);
 # define Limit(a, x, b)  ((x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x))
 # define ClampUp(a, b)   Max(a, b)
 # define ClampDown(a, b) Min(a, b)
+# define Abs(a)          (((a) < 0) ? -(a) : (a))
+
+// NOTE(liam): increment/decrement 'a' per call, limiting when 'a == x'
+# define SaturateUp(a, x)   ((a) > (x) ? (a = x) : (a++))
+# define SaturateDown(a, x) ((a) < (x) ? (a = x) : (a--))
+
+// TODO(liam): check if this works
+# define Implies(a, b)      (!(a) || (b))
 
 # define ArrayCount(a) (sizeof(a)/sizeof(*(a)))
 # define IsPowerOfTwo(n) (((n) & ((n) - 1)) == 0)
@@ -140,19 +148,19 @@ int ap_float(float a, float b);
 // NOTE(liam): behavior of assert.
 # if !defined(AssertBreak)
 #  include <stdlib.h>
-#  define AssertBreak(c) { fprintf(stderr, "%s:%d: failed assertion '%s'\n.", __FILE__, __LINE__, #c); exit(1); }
+#  define AssertBreak(c) { fprintf(stderr, "%s:%d: failed assertion '%s'\n.", __FILE__, __LINE__, #c); }
 # endif
 
 // DEBUG START
 # define ENABLE_DEBUG
 # ifdef  ENABLE_DEBUG
-#  define Assert(c) if (!(c)) { Statement(AssertBreak(c);); }
+#define Assert(c) ((c) ? (true) : (AssertBreak(c)))
+
 // NOTE(liam): force exit program. basically code should never reach this point.
 #  define Throw(msg) { fprintf(stderr, "[*] <THROW> at line %d: %s\n", __LINE__, #msg); Statement(AssertBreak();); }
 # else
-#  include <stdlib.h>
-#  define ASSERT(c,msg)
-#  define Throw(msg) { exit(1); }
+#  define Assert(c)
+#  define Throw(msg)
 # endif
 // DEBUG END
 

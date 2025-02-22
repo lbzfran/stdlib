@@ -73,9 +73,9 @@ SqrtFloat32(float32 x)
 {
     // TODO(liam): test that this works.
     int32 start = 0, end = x;
-    int32 mid;
+    int32 mid = 0;
 
-    float32 res;
+    float32 res = 0;
 
     while (start <= end)
     {
@@ -137,9 +137,9 @@ SqrtFloat64(float64 x)
 {
     // TODO(liam): test that this works.
     int64 start = 0, end = x;
-    int64 mid;
+    int64 mid = 0;
 
-    float64 res;
+    float64 res = 0;
 
     while (start <= end)
     {

@@ -5,6 +5,7 @@
 int main(void)
 {
     Arena arena = {0};
+
     TermSettings ts = {0};
     TermSettingsInit(&ts);
 

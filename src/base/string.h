@@ -4,6 +4,8 @@
 // NOTE(liam): use temp buffer.
 #include "arena.h"
 
+#include <stdarg.h>
+
 typedef struct StringData {
     // NOTE(liam): cap excludes header and null term.
     // since we're treating this as immutable:
