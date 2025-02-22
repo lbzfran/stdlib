@@ -4,16 +4,19 @@
 #include <time.h>
 
 typedef struct TermRenderBuf {
-    uint8 *b;
+    char *b;
     memory_index length;
     memory_index capacity;
 } TermRenderBuf;
 
 typedef struct TermSettings {
+    uint32 cx, cy;
+
     uint32 screenRows;
     uint32 screenCols;
 
-    StringData statusMsg;
+    char statusMsg[80];
+    uint32 msgLen;
     time_t statusMsgTime;
 
     bool32 alive;
