@@ -1,6 +1,6 @@
 #ifndef TERM_H
 #define TERM_H
-#include <termios.h>
+
 #include <time.h>
 
 #ifdef OS_WINDOWS

@@ -49,8 +49,6 @@
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
 
-
-
 DWORD WinFileNumToHandle(uint8 fileno);
 memory_index WinWrite_(uint8 fileno, char *c, memory_index size);
 memory_index WinRead_(uint8 fileno, char *buf, memory_index size);
