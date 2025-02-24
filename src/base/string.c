@@ -238,7 +238,6 @@ void
 StringListPrintn(StringList l)
 {
     StringListPrint_(l, stdout, '\n');
-    putc('\n', stdout);
 }
 
 void
@@ -726,3 +725,46 @@ String16Convert(Arena *arena, String16Data sd)
     StringData res = {stringSize, mem};
     return(res);
 }
+
+// NOTE(liam): directly targets mutable c-strings.
+void CharSub(char *dst, char *src, memory_index pos, memory_index size)
+{
+    src += pos;
+
+    while (size--) *dst++ = *src++;
+
+    *dst = '\0';
+}
+
+// NOTE(liam): converts immutable string to mutable c-string array.
+char **StringListToArray(Arena *arena, StringList list)
+{
+    // NOTE(liam): count must be number of args + 1
+    // where the last entry must be NULL.
+    // Requirement for exec calls.
+    memory_index count = list.nodeCount + 1;
+    char **buf = PushArray(arena, char*, count);
+
+    if (list.first == list.last)
+    {
+        if (list.first)
+        {
+            *buf = PushArray(arena, char, list.first->str.size + 1);
+            CharSub(*buf, (char *)StringLiteral(list.first->str), 0, list.first->str.size);
+        }
+    }
+    else
+    {
+        memory_index pos = 0;
+        for (StringNode *current = list.first;
+                current != NULL;
+                current = current->next)
+        {
+            *(buf + pos) = PushArray(arena, char, current->str.size + 1);
+            CharSub(*(buf + pos++), (char *)StringLiteral(current->str), 0, current->str.size);
+        }
+    }
+
+    return buf;
+}
+

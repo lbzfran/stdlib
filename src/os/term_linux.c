@@ -1,6 +1,7 @@
 
 #include "base/base.h"
 #include "term.h"
+#include "shell.h"
 
 #include <termios.h>
 #include <ctype.h>
@@ -466,7 +467,12 @@ void TermProcessKeypress(Arena *arena, TermSettings *ts)
 
         case CTRL_KEY('f'):
         {
-            TermPrompt(arena, ts, ":%s", NULL);
+            char *in = TermPrompt(arena, ts, ":%s", NULL);
+
+            /*StringList arglist = ShellParseStringList(arena, in);*/
+            /**/
+            /*StringListPrintn(arglist);*/
+            /*ShellExecStringList(arena, arglist);*/
             /*editorFind();*/
         } break;
 

@@ -53,6 +53,7 @@ memory_index StringLength(uint8 *str);
 memory_index String16Length(uint16 *str);
 uint8 CharUpper(uint8 c);
 uint8 CharLower(uint8 c);
+void CharSub(char *dst, char *src, memory_index pos, memory_index size);
 
 #define StringLiteral(sd) (sd.buf)
 
@@ -85,6 +86,7 @@ void StringListPrint(StringList l);
 void StringListPrintn(StringList l);
 void StringListPrintln(StringList l);
 void StringListMap(StringList l, void(*fn)(StringData));
+char **StringListToArray(Arena *arena, StringList list);
 
 // NOTE(liam): list manips
 void StringListPush_(StringList *list, StringData sd, StringNode *node_alloced);

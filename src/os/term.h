@@ -61,6 +61,8 @@ void TermDrawMessageBar(Arena *arena, TermSettings *ts, TermRenderBuf *rb);
 // NOTE(liam): input functions
 int TermReadKey(void);
 void TermProcessKeypress(Arena *arena, TermSettings *ts);
+
+// TODO(liam): interact with shell execution
 char *TermPrompt(Arena *arena, TermSettings *ts, char *prompt, void (*callback)(char *, int));
 
 // NOTE(liam): ...

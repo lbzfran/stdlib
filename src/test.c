@@ -6,6 +6,12 @@ int main(void)
 {
     Arena arena = {0};
 
+    /*char *p = ShellReadLine(&arena, "> ");*/
+
+    /*StringList sl = ShellParseStringList(&arena, p);*/
+
+    /*ShellExecStringList(&arena, sl);*/
+
     TermSettings ts = {0};
     TermSettingsInit(&ts);
 
