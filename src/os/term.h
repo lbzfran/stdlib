@@ -3,6 +3,18 @@
 #include <termios.h>
 #include <time.h>
 
+#ifdef OS_WINDOWS
+struct termios {
+    HANDLE stdin;
+    HANDLE stdout;
+
+    DWORD origInMode;
+    DWORD origOutMode;
+};
+#else
+# include <termios.h>
+#endif
+
 typedef struct TermRenderBuf {
     char *b;
     memory_index length;

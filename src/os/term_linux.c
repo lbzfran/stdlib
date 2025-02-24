@@ -32,7 +32,7 @@ void TermEnableRawMode(struct termios *tm)
      */
     if (tcgetattr(STDIN_FILENO, tm) == -1)
     {
-        TermDie("tcsetattr");
+        TermDie("tcgetattr");
     }
 
     struct termios raw = *tm;

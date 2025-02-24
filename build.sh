@@ -37,7 +37,7 @@ if [ "$BUILD_PLATFORM" = "win32" ]; then
 	$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
     fi
 
-    $CC $FLAGS -o ./build/ed $SRC/editor.c $SRC/gap.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
+    # $CC $FLAGS -o ./build/ed $SRC/editor.c $SRC/gap.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
 elif [ "$BUILD_PLATFORM" = "linux" ]; then
     if [[ $BUILD_CORES == *"base"* ]]; then
         $CC $FLAGS -o ./build/base $SRC/base/base.c $LAYER_BASE_LINUX
