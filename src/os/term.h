@@ -45,20 +45,24 @@ enum termKey {
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+// NOTE(liam): misc functions
 void TermDie(const char *);
 void TermSettingsInit(TermSettings *ts);
-
 void TermEnableRawMode(struct termios *);
 void TermDisableRawMode(struct termios *);
 
+// NOTE(liam): render functions
 void TermRenderAppend(Arena *arena, TermRenderBuf *rb, char *c, memory_index len);
 void TermRender(Arena *arena, TermSettings *ts);
+void TermSetStatusMessage(TermSettings *ts, const char *fmt, ...);
+void TermDrawStatusBar(Arena *arena, TermSettings *ts, TermRenderBuf *rb);
+void TermDrawMessageBar(Arena *arena, TermSettings *ts, TermRenderBuf *rb);
 
+// NOTE(liam): input functions
 int TermReadKey(void);
 void TermProcessKeypress(Arena *arena, TermSettings *ts);
 char *TermPrompt(Arena *arena, TermSettings *ts, char *prompt, void (*callback)(char *, int));
 
-void TermSetStatusMessage(TermSettings *ts, const char *fmt, ...);
-void TermDrawMessageBar(Arena *arena, TermSettings *ts, TermRenderBuf *rb);
+// NOTE(liam): ...
 
 #endif // TERM_H

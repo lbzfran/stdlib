@@ -61,7 +61,7 @@ void TermDisableRawMode(struct termios *tm)
     }
 }
 
-int getCursorPosition(int *rows, int *cols)
+int TermGetCursorPosition(int *rows, int *cols)
 {
     char buf[32];
     uint32 i = 0;
@@ -81,7 +81,7 @@ int getCursorPosition(int *rows, int *cols)
 }
 
 
-int getWindowSize(int *rows, int *cols)
+int TermGetWindowSize(int *rows, int *cols)
 {
     struct winsize ws;
 
@@ -89,7 +89,7 @@ int getWindowSize(int *rows, int *cols)
     {
         if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
         {
-            return getCursorPosition(rows, cols);
+            return TermGetCursorPosition(rows, cols);
         }
         TermReadKey();
         return -1;
@@ -111,9 +111,9 @@ void TermSettingsInit(TermSettings *ts)
     ts->statusMsg[0] = '\0';
     ts->statusMsgTime = 0;
 
-    if (getWindowSize(&ts->screenRows, &ts->screenCols) == -1)
+    if (TermGetWindowSize(&ts->screenRows, &ts->screenCols) == -1)
     {
-        TermDie("getWindowSize");
+        TermDie("TermGetWindowSize");
     }
     ts->screenRows -= 2;
 }

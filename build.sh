@@ -2,6 +2,7 @@
 
 SRC="./src"
 
+BUILD_DEBUG="1"
 # add the test cases to build here (separated by layers)
 # i.e. BUILD_CORES=("base" "os")
 BUILD_CORES=("term")
@@ -16,8 +17,6 @@ LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c"
 
 LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"
 
-
-
 CC=gcc
 INC="-I./src"
 C11FLAGS="-D_DEFAULT_SOURCE -D_BSD_SOURCE -D_GNU_SOURCE -std=c11"
@@ -26,7 +25,7 @@ LD="-lm"
 FLAGS="${CFLAGS} ${C11FLAGS} ${INC} ${LD}"
 
 mkdir -p ./build
-ctags -R ./src
+[ "${BUILD_DEBUG}" = "1" ] && ctags -R ./src
 
 if [ "$BUILD_PLATFORM" = "win32" ]; then
     if [[ $BUILD_CORES == *"base"* ]]; then
