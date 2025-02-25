@@ -42,6 +42,7 @@
 #  define CLEAR system("cls")
 # elif defined(OS_LINUX) || defined(OS_MAC)
 #  define CLEAR system("clear")
+#  define EXTERN_C extern "C"
 # else
 #  define CLEAR 0
 # endif
@@ -59,7 +60,6 @@
 
 # define EXTERN_C_START extern "C" {
 # define EXTERN_C_END  }
-# define EXTERN_C extern "C"
 
 // some funny redefs
 # define AND &&

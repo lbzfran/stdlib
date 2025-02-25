@@ -1,15 +1,15 @@
 #ifndef TERM_H
 #define TERM_H
 
+#include "base/base.h"
+
 #include <time.h>
 
-#ifdef OS_WINDOWS
+#if defined(OS_WINDOWS)
+#include <Windows.h>
 struct termios {
-    HANDLE stdin;
-    HANDLE stdout;
-
-    DWORD origInMode;
-    DWORD origOutMode;
+    DWORD InMode;
+    DWORD OutMode;
 };
 #else
 # include <termios.h>

@@ -1,38 +1,11 @@
 
 #include "file.h"
+#include "unistd.h"
 #include <stdio.h>
 #include <dirent.h>
 #include <Windows.h>
 
 // NOTE(liam): specific function to windows api.
-local StringData
-GetLastErrorAsString()
-{
-    StringData res = {0};
-
-    DWORD errorMessageID = GetLastError();
-    if(errorMessageID == 0) {
-        return(res);
-    }
-
-    LPSTR messageBuffer = null;
-
-    memory_index size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                                       FORMAT_MESSAGE_FROM_SYSTEM     |
-                                       FORMAT_MESSAGE_IGNORE_INSERTS,
-                                       NULL, errorMessageID,
-                                       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                       (LPSTR)&messageBuffer, 0, NULL);
-
-    res.buf = (uint8*)messageBuffer;
-    res.size = size;
-
-    LocalFree(messageBuffer);
-
-    return(res);
-}
-
-
 
 StringData
 FileRead(Arena *arena, StringData filename)
@@ -46,9 +19,9 @@ FileRead(Arena *arena, StringData filename)
 
     if (file == INVALID_HANDLE_VALUE)
     {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to open file '%s': %s",
-                StringLiteral(filename), StringLiteral(errmsg));
+        (void)GetLastErrorAsString();
+        fprintf(stderr, "Failed to open file '%s'.\n",
+                StringLiteral(filename));
         return(res);
     }
 
@@ -58,9 +31,9 @@ FileRead(Arena *arena, StringData filename)
 
     if (ReadFile(file, buf, fileSize, 0, 0) == null)
     {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to read file '%s': %s",
-                StringLiteral(filename), StringLiteral(errmsg));
+        (void)GetLastErrorAsString();
+        fprintf(stderr, "Failed to read file '%s'.\n",
+                StringLiteral(filename));
         return(res);
     }
     StringNew(&res, buf);
@@ -83,9 +56,9 @@ FileWriteList(Arena *arena, StringData filename, StringList data, bool32 append_
                                 0);
     if (file == INVALID_HANDLE_VALUE)
     {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to open file '%s': %s",
-                StringLiteral(filename), StringLiteral(errmsg));
+        (void)GetLastErrorAsString();
+        fprintf(stderr, "Failed to open file '%s'.\n",
+                StringLiteral(filename));
         res = false;
     }
     else
@@ -117,12 +90,11 @@ FileWriteList(Arena *arena, StringData filename, StringList data, bool32 append_
 
         if (sizeWritten != data.size)
         {
-            StringData errmsg = GetLastErrorAsString();
-            fprintf(stderr, "Failed to write file '%s': size %llu of %llu; %s",
+            (void)GetLastErrorAsString();
+            fprintf(stderr, "Failed to write file '%s': size %llu of %llu.\n",
                     StringLiteral(filename),
                     sizeWritten,
-                    data.size,
-                    StringLiteral(errmsg)
+                    data.size
             );
             res = false;
         }
@@ -184,9 +156,9 @@ FileDelete(Arena *arena, StringData filename)
     bool32 res = DeleteFileW(StringLiteral(fn_utf16));
     if (res == false)
     {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to delete file '%s': %s",
-                StringLiteral(filename), StringLiteral(errmsg));
+        (void)GetLastErrorAsString();
+        fprintf(stderr, "Failed to delete file '%s'.\n",
+                StringLiteral(filename));
     }
     return(res);
 }
@@ -201,9 +173,9 @@ FileRename(Arena *arena, StringData oldfn, StringData newfn)
                            MOVEFILE_FAIL_IF_NOT_TRACKABLE);
     if (res == false)
     {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to rename file '%s' to '%s': %s",
-                StringLiteral(oldfn), StringLiteral(newfn), StringLiteral(errmsg));
+        (void)GetLastErrorAsString();
+        fprintf(stderr, "Failed to rename file '%s' to '%s'.\n",
+                StringLiteral(oldfn), StringLiteral(newfn));
     }
     return(res);
 
@@ -216,9 +188,9 @@ FileMakeDirectory(Arena *arena, StringData dirname)
     bool32 res = CreateDirectoryW(StringLiteral(fn_utf16), 0);
     if (res == false)
     {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to make directory '%s': %s",
-        StringLiteral(dirname), StringLiteral(errmsg));
+        (void)GetLastErrorAsString();
+        fprintf(stderr, "Failed to make directory '%s'.\n",
+        StringLiteral(dirname));
     }
     return(res);
 }
@@ -230,9 +202,9 @@ FileDeleteDirectory(Arena *arena, StringData dirname)
     bool32 res = RemoveDirectoryW(StringLiteral(fn_utf16));
     if (res == false)
     {
-        StringData errmsg = GetLastErrorAsString();
-        fprintf(stderr, "Failed to delete directory '%s': %s",
-                StringLiteral(dirname), StringLiteral(errmsg));
+        (void)GetLastErrorAsString();
+        fprintf(stderr, "Failed to delete directory '%s'.\n",
+                StringLiteral(dirname));
     }
     return(res);
 }

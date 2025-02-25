@@ -11,16 +11,15 @@ BUILD_PLATFORM="${1:-"linux"}"
 
 LAYER_BASE_LINUX="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
 LAYER_OS_LINUX="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c $SRC/os/term_linux.c $SRC/os/shell_linux.c"
+LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"
 
 LAYER_BASE_WIN32="$SRC/base/math.c $SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_win32.c $SRC/base/random.c"
-LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c"
-
-LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"
+LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c $SRC/os/term_win32.c $SRC/os/unistd_win32.c"
 
 CC=gcc
 INC="-I./src"
 C11FLAGS="-D_DEFAULT_SOURCE -D_BSD_SOURCE -D_GNU_SOURCE -std=c11"
-CFLAGS="-Wall -g -fanalyzer -fsanitize=address"
+CFLAGS="-Wall -g -fanalyzer"
 LD="-lm"
 FLAGS="${CFLAGS} ${C11FLAGS} ${INC} ${LD}"
 
@@ -35,6 +34,10 @@ if [ "$BUILD_PLATFORM" = "win32" ]; then
     if [[ $BUILD_CORES == *"os"* ]]; then
 	$CC $FLAGS -fPIC -shared -o ./build/test.dll $SRC/os/dll_main.c
 	$CC $FLAGS -o ./build/os $SRC/os/os.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
+    fi
+
+    if [[ $BUILD_CORES == *"term"* ]]; then
+        $CC $FLAGS -DOS_WINDOWS -o ./build/view $SRC/test.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32
     fi
 
     # $CC $FLAGS -o ./build/ed $SRC/editor.c $SRC/gap.c $LAYER_BASE_WIN32 $LAYER_OS_WIN32

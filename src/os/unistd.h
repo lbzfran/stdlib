@@ -6,7 +6,9 @@
  * https://stackoverflow.com/a/826027/1202830
  */
 
-#ifndef OS_WINDOWS
+#include "base/base.h"
+
+#if !defined(OS_WINDOWS)
 # error "use <unistd.h> instead."
 #endif
 
@@ -27,7 +29,7 @@
 //#define   X_OK    1       /* execute permission - unsupported in windows*/
 #define F_OK    0       /* Test for existence.  */
 
-#define access _access
+//#define access _access
 #define dup2 _dup2
 #define execve _execve
 #define ftruncate _chsize
@@ -39,7 +41,7 @@
 #define lseek _lseek
 /* read, write, and close are NOT being #defined here, because while there are file handle specific versions for Windows, they probably don't work for sockets. You need to look at your app and consider whether to call e.g. closesocket(). */
 
-#ifdef _WIN64
+#if defined(_WIN64)
 #define ssize_t __int64
 #else
 #define ssize_t long
@@ -50,8 +52,9 @@
 #define STDERR_FILENO 2
 
 DWORD WinFileNumToHandle(uint8 fileno);
-memory_index WinWrite_(uint8 fileno, char *c, memory_index size);
-memory_index WinRead_(uint8 fileno, char *buf, memory_index size);
+uint32 WinWrite_(uint8 fileno, char *c, memory_index size);
+uint32 WinRead_(uint8 fileno, char *buf, memory_index size);
+DWORD GetLastErrorAsString(void);
 
 #define write WinWrite_
 #define read WinRead_

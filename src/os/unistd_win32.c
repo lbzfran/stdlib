@@ -23,20 +23,44 @@ DWORD WinFileNumToHandle(uint8 fileno)
     return res;
 }
 
-memory_index WinWrite_(uint8 fileno, char *c, memory_index size)
+uint32 WinWrite_(uint8 fileno, char *c, memory_index size)
 {
-    memory_index res = 0;
+    long unsigned int res = 0;
     DWORD handleID = WinFileNumToHandle(fileno);
     HANDLE handle = GetStdHandle(handleID);
     ReadConsoleA(handle, c, size, &res, NULL);
-    return res;
+    return (uint32)res;
 }
 
-memory_index WinRead_(uint8 fileno, char *buf, memory_index size)
+uint32 WinRead_(uint8 fileno, char *buf, memory_index size)
 {
-    memory_index res = 0;
+    long unsigned int res = 0;
     DWORD handleID = WinFileNumToHandle(fileno);
     HANDLE handle = GetStdHandle(handleID);
     WriteConsoleA(handle, buf, size, &res, NULL);
+    return (uint32)res;
+}
+
+DWORD GetLastErrorAsString(void)
+{
+    DWORD res = GetLastError();
+
+    if (res)
+    {
+        LPSTR messageBuffer = null;
+
+        (void)FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                                           FORMAT_MESSAGE_FROM_SYSTEM     |
+                                           FORMAT_MESSAGE_IGNORE_INSERTS,
+                                           NULL, res,
+                                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                                           (LPSTR)&messageBuffer, 0, NULL);
+
+
+        fprintf(stderr, "%s", messageBuffer);
+
+        LocalFree(messageBuffer);
+    }
+
     return res;
 }

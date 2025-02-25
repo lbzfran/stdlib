@@ -15,65 +15,78 @@ int TermGetWindowSize(int *rows, int *cols)
 void TermDie(const char *s)
 {
     // TODO(liam): pull GetLastErrorAsString() func.
-    Assert(false && "not implemented");
+    DWORD errID = GetLastErrorAsString();
+    fprintf(stderr, "Error '%llu' at '%s'.\n", (memory_index)errID, s);
+
+    ExitProcess(errID);
 }
 
-void TermDisableRawMode(struct termios *tm) {
+void TermDisableRawMode(struct termios *tm)
+{
     fflush(stdout);
 
     write(STDOUT_FILENO, "\x1b[2J", 4);
     write(STDOUT_FILENO, "\x1b[H", 3);
 
-
-    (void)SetConsoleMode(tm->stdout, tm->origOutMode);
-    (void)SetConsoleMode(tm->stdin, tm->origInMode);
-}
-
-void TermEnableRawMode(struct termios *tm) {
-
-    // Get handles for stdin and stdout
-    tm->stdin = GetStdHandle(STD_INPUT_HANDLE);
-    if (tm->stdin == INVALID_HANDLE_VALUE || tm->stdin == NULL)
+    HANDLE hstdin = GetStdHandle(STD_INPUT_HANDLE);
+    if (hstdin == INVALID_HANDLE_VALUE || hstdin == NULL)
     {
         TermDie("GetStdHandle: stdin");
     }
 
-    tm->stdout = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (tm->tdout == INVALID_HANDLE_VALUE || tm->stdout == NULL)
+    HANDLE hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hstdout == INVALID_HANDLE_VALUE || hstdout == NULL)
+    {
+        TermDie("GetStdHandle: stdout");
+    }
+
+    (void)SetConsoleMode(hstdout, tm->OutMode);
+    (void)SetConsoleMode(hstdin, tm->InMode);
+}
+
+void TermEnableRawMode(struct termios *tm)
+{
+    // Get handles for stdin and stdout
+    HANDLE hstdin = GetStdHandle(STD_INPUT_HANDLE);
+    if (hstdin == INVALID_HANDLE_VALUE)
+    {
+        TermDie("GetStdHandle: stdin");
+    }
+
+    HANDLE hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hstdout == INVALID_HANDLE_VALUE)
     {
         TermDie("GetStdHandle: stdout");
     }
 
     // Set console to "raw" mode
-
-    if (!GetConsoleMode(tm->stdin, &tm->origInMode))
+    // TODO(liam): not working
+    if (!GetConsoleMode(hstdin, &tm->InMode))
     {
         TermDie("GetConsoleMode: stdin");
     }
-    if (!GetConsoleMode(tm->stdout, &tm->origOutMode))
+    if (!GetConsoleMode(hstdout, &tm->OutMode))
     {
         TermDie("GetConsoleMode: stdout");
     }
 
-    DWORD dwInMode = tm->origInMode;
+    DWORD dwInMode = tm->InMode;
     dwInMode &= ~ENABLE_ECHO_INPUT;
     dwInMode &= ~ENABLE_LINE_INPUT;
     dwInMode &= ~ENABLE_PROCESSED_INPUT;
     dwInMode |= ENABLE_VIRTUAL_TERMINAL_INPUT;
 
-    DWORD dwOutMode = tm->origOutMode;
+    DWORD dwOutMode = tm->OutMode;
     dwOutMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     dwOutMode |= ENABLE_PROCESSED_OUTPUT;
     dwOutMode &= ~ENABLE_WRAP_AT_EOL_OUTPUT;
 
-    if (!SetConsoleMode(tm->stdin, dwInMode))
+    if (!SetConsoleMode(hstdin, dwInMode))
     {
         TermDie("SetConsoleMode: stdin");
     }
-    if (!SetConsoleMode(tm->stdout, dwOutMode))
+    if (!SetConsoleMode(hstdout, dwOutMode))
     {
         TermDie("SetConsoleMode: stdout");
     }
-
-    return 0;
 }
