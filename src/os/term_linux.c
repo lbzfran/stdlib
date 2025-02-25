@@ -141,7 +141,8 @@ char *TermPrompt(Arena *arena, TermSettings *ts, char *prompt, void (*callback)(
         int c = TermReadKey();
         if (c == DEL_KEY || c == CTRL_KEY('h') || c == BACKSPACE)
         {
-            if (buflen != 0) { buf[--buflen] = '\0'; }
+            if (buflen != 0)
+            { buf[--buflen] = '\0'; }
         }
         else if (c == '\x1b')
         {
@@ -167,16 +168,12 @@ char *TermPrompt(Arena *arena, TermSettings *ts, char *prompt, void (*callback)(
         {
             if (buflen == bufsize - 1)
             {
-                bufsize *= 2;
-                char *newBuf = PushArray(arena, char, bufsize);
+                memory_index newsize = bufsize * 2;
+                char *newBuf = PushArray(arena, char, newsize);
 
-                char *dst = newBuf;
-                char *src = buf;
-                while (buflen--)
-                {
-                    *(dst++) = *(src++);
-                }
+                MemoryCopy(newBuf, buf, bufsize);
                 buf = newBuf;
+                bufsize = newsize;
             }
             buf[buflen++] = c;
             buf[buflen] = '\0';
@@ -269,13 +266,13 @@ void TermRender(Arena *arena, TermSettings *ts)
     // NOTE(liam): hides the cursor during drawing.
     TermRenderAppend(arena, &rb, "\x1b[?25l", 6);
     /*TermRenderAppend(arena, &rb, "\x1b[2J", 4);*/
-    /*TermRenderAppend(arena, &rb, "\x1b[H", 3);*/
+    TermRenderAppend(arena, &rb, "\x1b[H", 3);
 
     for (memory_index i = 0; i < ts->screenRows; i++)
     {
-        TermRenderAppend(arena, &rb, "\x1b[K", 3);
         TermRenderAppend(arena, &rb, "~", 1);
 
+        TermRenderAppend(arena, &rb, "\x1b[K", 3);
         TermRenderAppend(arena, &rb, "\r\n", 2);
     }
     TermDrawStatusBar(arena, ts, &rb);
@@ -469,10 +466,12 @@ void TermProcessKeypress(Arena *arena, TermSettings *ts)
         {
             char *in = TermPrompt(arena, ts, ":%s", NULL);
 
-            /*StringList arglist = ShellParseStringList(arena, in);*/
-            /**/
+            TermSetStatusMessage(ts, "<%s>", in);
+
+            StringList arglist = ShellParseStringList(arena, in);
+
             /*StringListPrintn(arglist);*/
-            /*ShellExecStringList(arena, arglist);*/
+            ShellExecStringList(arena, arglist);
             /*editorFind();*/
         } break;
 
