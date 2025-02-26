@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <ctype.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <errno.h>
@@ -471,7 +472,6 @@ void TermProcessKeypress(Arena *arena, TermSettings *ts)
             StringList arglist = ShellParseStringList(arena, in);
 
             /*StringListPrintn(arglist);*/
-            ShellExecStringList(arena, arglist);
             /*editorFind();*/
         } break;
 
