@@ -19,7 +19,7 @@ LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c $
 CC=gcc
 INC="-I./src"
 C11FLAGS="-D_DEFAULT_SOURCE -D_BSD_SOURCE -D_GNU_SOURCE -std=c11"
-CFLAGS="-Wall -g -fanalyzer"
+CFLAGS="-Wall -g -fanalyzer -fsanitize=address"
 LD="-lm"
 FLAGS="${CFLAGS} ${C11FLAGS} ${INC} ${LD}"
 

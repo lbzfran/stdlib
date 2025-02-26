@@ -296,6 +296,7 @@ void TermRender(Arena *arena, TermSettings *ts)
 
 int TermReadKey(void)
 {
+    int res;
     int nread;
     char c;
 
@@ -311,28 +312,27 @@ int TermReadKey(void)
     {
         char seq[6] = {0};
 
-        if (read(STDIN_FILENO, &seq[0], 1) != 1) { return '\x1b'; }
-        if (read(STDIN_FILENO, &seq[1], 1) != 1) { return '\x1b'; }
-
-        if (seq[0] == '[')
+        if (read(STDIN_FILENO, &seq[0], 1) != 1) { res = '\x1b'; }
+        else if (read(STDIN_FILENO, &seq[1], 1) != 1) { res = '\x1b'; }
+        else if (seq[0] == '[')
         {
             if (seq[1] >= '0' && seq[1] <= '9')
             {
-                if (read(STDIN_FILENO, &seq[2], 1) != 1) { return '\x1b'; }
-
-                if (seq[2] == ';')
+                if (read(STDIN_FILENO, &seq[2], 1) != 1) { res = '\x1b'; }
+                else if (seq[2] == ';')
                 {
                     // TODO(liam): arrow case here; check gpt
-                    if (read(STDIN_FILENO, &seq[3], 1) != 1) return '\x1b';
+                    if (read(STDIN_FILENO, &seq[3], 1) != 1) { res = '\x1b'; }
                     // Read the final letter that indicates the arrow direction.
-                    if (read(STDIN_FILENO, &seq[4], 1) != 1) return '\x1b';
-
-                    if (seq[3] == '5') { // Modifier 5 means Ctrl.
-                        switch (seq[4]) {
-                            case 'A': return CTRL_ARROW_UP;
-                            case 'B': return CTRL_ARROW_DOWN;
-                            case 'C': return CTRL_ARROW_RIGHT;
-                            case 'D': return CTRL_ARROW_LEFT;
+                    else if (read(STDIN_FILENO, &seq[4], 1) != 1) { res = '\x1b'; }
+                    else if (seq[3] == '5') // Modifier 5 means Ctrl.
+                    {
+                        switch (seq[4])
+                        {
+                            case 'A': res = CTRL_ARROW_UP;
+                            case 'B': res = CTRL_ARROW_DOWN;
+                            case 'C': res = CTRL_ARROW_RIGHT;
+                            case 'D': res = CTRL_ARROW_LEFT;
                         }
                     }
                 }
@@ -340,13 +340,13 @@ int TermReadKey(void)
                 {
                     switch (seq[1])
                     {
-                        case '1': return HOME_KEY;
-                        case '3': return DEL_KEY;
-                        case '4': return END_KEY;
-                        case '5': return PAGE_UP;
-                        case '6': return PAGE_DOWN;
-                        case '7': return HOME_KEY;
-                        case '8': return END_KEY;
+                        case '1': res = HOME_KEY;
+                        case '3': res = DEL_KEY;
+                        case '4': res = END_KEY;
+                        case '5': res = PAGE_UP;
+                        case '6': res = PAGE_DOWN;
+                        case '7': res = HOME_KEY;
+                        case '8': res = END_KEY;
                     }
                 }
             }
@@ -354,12 +354,12 @@ int TermReadKey(void)
             {
                 switch (seq[1])
                 {
-                    case 'A': return ARROW_UP;
-                    case 'B': return ARROW_DOWN;
-                    case 'C': return ARROW_RIGHT;
-                    case 'D': return ARROW_LEFT;
-                    case 'H': return HOME_KEY;
-                    case 'F': return END_KEY;
+                    case 'A': res = ARROW_UP;
+                    case 'B': res = ARROW_DOWN;
+                    case 'C': res = ARROW_RIGHT;
+                    case 'D': res = ARROW_LEFT;
+                    case 'H': res = HOME_KEY;
+                    case 'F': res = END_KEY;
                 }
             }
         }
@@ -367,17 +367,18 @@ int TermReadKey(void)
         {
             switch(seq[1])
             {
-                case 'H': return HOME_KEY;
-                case 'F': return END_KEY;
+                case 'H': res = HOME_KEY;
+                case 'F': res = END_KEY;
             }
         }
-
-        return '\x1b';
+        res = '\x1b';
     }
     else
     {
-        return c;
+        res = (int)c;
     }
+
+    return res;
 }
 
 void TermProcessKeypress(Arena *arena, TermSettings *ts)
@@ -466,10 +467,15 @@ void TermProcessKeypress(Arena *arena, TermSettings *ts)
         case CTRL_KEY('f'):
         {
             char *in = TermPrompt(arena, ts, ":%s", NULL);
-
+            if (in == NULL)
+            {
+                // NOTE(liam): if no prompt, end early.
+                break;
+            }
             TermSetStatusMessage(ts, "<%s>", in);
-
             StringList arglist = ShellParseStringList(arena, in);
+
+            (void)arglist;
 
             /*StringListPrintn(arglist);*/
             /*editorFind();*/

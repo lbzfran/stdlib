@@ -15,15 +15,26 @@ struct termios {
 # include <termios.h>
 #endif
 
+// NOTE(liam): the full buffer gets written by TermRender.
 typedef struct TermRenderBuf {
     char *b;
     memory_index length;
     memory_index capacity;
 } TermRenderBuf;
 
+typedef struct TermBuf {
+    char *b;
+} TermBuf;
+
+#define TERM_HISTORY_SIZE 2048
+
+typedef struct TermKeyHistory {
+    int buf[2048];
+} TermKeyHistory;
+
 typedef struct TermSettings {
     int cx, cy;
-    int prx, pry;
+    int prx, pry; // prompt pos
 
     int screenRows;
     int screenCols;

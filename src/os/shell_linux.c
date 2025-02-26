@@ -65,65 +65,67 @@ void ShellExecLine(char **args)
         perror("pipe");
         Throw("failed to create pipe");
     }
-
-    pid = fork();
-    if (pid == 0)
-    {
-        // NOTE(liam): child
-
-        // NOTE(liam): close read pipe
-        if (close(pipefd[0]) == -1)
-        {
-            perror("close");
-        }
-        dup2(pipefd[1], STDOUT_FILENO);
-        if (execvp(args[0], args) == -1)
-        {
-            perror("execvp");
-        }
-        if (close(pipefd[1]) == -1)
-        {
-            perror("close");
-        }
-        Throw("failed to execute cmd");
-    }
-    else if (pid < 0)
-    {
-        if (close(pipefd[0]) == -1)
-        {
-            perror("close");
-        }
-        if (close(pipefd[1]) == -1)
-        {
-            perror("close");
-        }
-        perror("fork");
-    }
     else
     {
-        /*do*/
-        /*{*/
-
-        // NOTE(liam): close write pipe
-        if (close(pipefd[1]) == -1)
+        pid = fork();
+        if (pid == 0)
         {
-            perror("close");
-        }
+            // NOTE(liam): child
 
-        while ((bufRead = read(pipefd[0], buf, sizeof(buf) - 1)) > 0)
-        {
-            buf[bufRead] = '\0';
-            printf("%s", buf);
+            // NOTE(liam): close read pipe
+            if (close(pipefd[0]) == -1)
+            {
+                perror("close");
+            }
+            dup2(pipefd[1], STDOUT_FILENO);
+            if (execvp(args[0], args) == -1)
+            {
+                perror("execvp");
+            }
+            if (close(pipefd[1]) == -1)
+            {
+                perror("close");
+            }
+            Throw("failed to execute cmd");
         }
+        else if (pid < 0)
+        {
+            if (close(pipefd[0]) == -1)
+            {
+                perror("close");
+            }
+            if (close(pipefd[1]) == -1)
+            {
+                perror("close");
+            }
+            perror("fork");
+        }
+        else
+        {
+            /*do*/
+            /*{*/
 
-        if (close(pipefd[0]) == -1)
-        {
-            perror("close");
+            // NOTE(liam): close write pipe
+            if (close(pipefd[1]) == -1)
+            {
+                perror("close");
+            }
+
+            while ((bufRead = read(pipefd[0], buf, sizeof(buf) - 1)) > 0)
+            {
+                buf[bufRead] = '\0';
+                printf("%s", buf);
+            }
+
+            if (close(pipefd[0]) == -1)
+            {
+                perror("close");
+            }
+            wpid = waitpid(pid, &status, 0);
+            Assert(wpid == pid);
+            /*}*/
+            /*while (!WIFEXITED(status) && !WIFSIGNALED(status));*/
         }
-        wpid = waitpid(pid, &status, 0);
-        Assert(wpid == pid);
-        /*}*/
-        /*while (!WIFEXITED(status) && !WIFSIGNALED(status));*/
     }
 }
 
