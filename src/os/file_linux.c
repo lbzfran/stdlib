@@ -197,7 +197,7 @@ FileIterNext(Arena *arena, FileIterator *iter, StringData *dst)
 {
     bool32 res = true;
 
-    struct dirent *ent = readdir(iter->handle);
+    struct dirent *ent = readdir((DIR *)iter->handle);
     if (ent == NULL)
     {
         res = false;
@@ -228,10 +228,13 @@ FileIterNext(Arena *arena, FileIterator *iter, StringData *dst)
 void
 FileIterEnd(FileIterator iter)
 {
-    bool32 res = closedir((DIR *)iter.handle);
-    if (res == -1)
+    if ((DIR *)iter.handle)
     {
-        perror("Failed to close directory");
+        bool32 res = closedir((DIR *)iter.handle);
+        if (res == -1 && errno != 0)
+        {
+            perror("Failed to close directory");
+        }
     }
 }
 
