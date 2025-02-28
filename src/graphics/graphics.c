@@ -20,14 +20,32 @@ typedef struct GWindow {
     int screen;
     Window window;
     GC gc;
+    Visual *visual;
+    XFontStruct *font;
 
     XEvent event;
     KeySym key;
 
-    Atom wm_delete_window;
+    Colormap colormap;
 
+    Atom wm_delete_window;
     bool32 alive;
 } GWindow;
+
+void GWindowFont(GWindow *gw, char *font_name)
+{
+    if (gw->font)
+    {
+        XFreeFont(gw->display, gw->font);
+    }
+
+    gw->font = XLoadQueryFont(gw->display, font_name);
+    if (gw->font == NULL)
+    {
+        fprintf(stderr, "XLoadQueryFont: failed to load font '%s'\n", font_name);
+    }
+    XSetFont(gw->display, gw->gc, gw->font->fid);
+}
 
 void GWindowInit(GWindow *gw)
 {
@@ -39,7 +57,7 @@ void GWindowInit(GWindow *gw)
     gw->height = screenHeight;
 
     gw->display = XOpenDisplay((char *)NULL);
-    gw->screen = XDefaultScreen(gw->display);
+    gw->screen = DefaultScreen(gw->display);
 
     Display *display = gw->display;
     int screen = gw->screen;
@@ -47,20 +65,46 @@ void GWindowInit(GWindow *gw)
     gw->black = BlackPixel(display, screen);
     gw->white = WhitePixel(display, screen);
 
-    gw->window = XCreateSimpleWindow(display, XDefaultRootWindow(display),
+    gw->window = XCreateSimpleWindow(display, DefaultRootWindow(display),
             0, 0, gw->width, gw->height, 5, gw->white, gw->black);
 
     Window window = gw->window;
 
     XSetStandardProperties(display, window, "x11 window", "hi", None, NULL, 0, NULL);
+    /*XSetWMIconName(display, window, ...);*/
 
-    XSelectInput(display, window, ExposureMask | ButtonPressMask | KeyPressMask |
-                                  StructureNotifyMask);
+    XSelectInput(display, window, ExposureMask | ButtonPressMask |
+                                  KeyPressMask | StructureNotifyMask);
 
     XWindowAttributes attr = {0};
     XGetWindowAttributes(display, window, &attr);
 
     gw->gc = XCreateGC(display, window, 0, NULL);
+
+    gw->wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
+
+    GWindowFont(gw, "6x13");
+
+    XSizeHints *win_size_hints = XAllocSizeHints();
+    if (!win_size_hints)
+    {
+        fprintf(stderr, "XAllocSizeHints unable to allocate memory\n");
+        return;
+    }
+
+    // NOTE(liam): preferred window sizing
+    win_size_hints->flags = PSize | PMinSize;
+
+    win_size_hints->min_width = 300;
+    win_size_hints->min_height = 200;
+    win_size_hints->base_width = screenWidth;
+    win_size_hints->base_height = screenHeight;
+
+    XSetWMNormalHints(display, window, win_size_hints);
+    XFree(win_size_hints);
+
+    gw->colormap = DefaultColormap(display, screen);
 
     XClearWindow(display, window);
 
@@ -69,17 +113,37 @@ void GWindowInit(GWindow *gw)
 
     // NOTE(liam): like XMapWindow but also raises to top of stack.
     XMapRaised(display, window);
+    XFlush(display);
 
-    gw->wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
 }
 
-void GWindowClose(GWindow *gw)
+void GWindowFree(GWindow *gw)
 {
+    // NOTE(liam): gw should not be referred to after free,
+    // unless GWindowInit is called on it again.
+    if (gw->font)
+    {
+        XFreeFont(gw->display, gw->font);
+    }
     XFreeGC(gw->display, gw->gc);
     XDestroyWindow(gw->display, gw->window);
     XCloseDisplay(gw->display);
 }
+
+void GWindowWrite(GWindow *gw, char *s, memory_index len)
+{
+    int x, y;
+    int string_width;
+    int font_height;
+
+    font_height = gw->font->ascent + gw->font->descent;
+    string_width = XTextWidth(gw->font, s, len);
+
+    x = (gw->width - string_width) / 2;
+    y = (gw->height - font_height) / 2;
+    XDrawString(gw->display, gw->window, gw->gc, x, y, s, len);
+}
+
 
 void GWindowDraw(GWindow *gw)
 {
@@ -97,9 +161,12 @@ void GWindowDraw(GWindow *gw)
 
     XSetLineAttributes(display, gc, 2, LineSolid, CapRound, JoinRound);
 
+    GWindowWrite(gw, "howdy", 5);
+
     /*XDrawPoint(display, window, gc, 300, 300);*/
     /*XDrawLine(display, window, gc, 20, 20, 40, 100);*/
 }
+
 
 void GWindowEvent(GWindow *gw)
 {
@@ -159,6 +226,6 @@ int main(void)
         GWindowEvent(&gw);
     }
 
-    GWindowClose(&gw);
+    GWindowFree(&gw);
     return 0;
 }
