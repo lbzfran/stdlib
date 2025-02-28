@@ -4,203 +4,112 @@
 #include "base/base.h"
 #include "os/os.h"
 #include <unistd.h>
-#include <xcb/xcb.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 const uint16 screenWidth = 1080;
 const uint16 screenHeight = 720;
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <inttypes.h>
 
-#include <xcb/xcb.h>
-
-#define WIDTH 300
-#define HEIGHT 100
-
-static xcb_gc_t getFontGC(xcb_connection_t *c,
-        xcb_screen_t     *screen,
-        xcb_window_t      window,
-        const char       *font_name);
-
-
-static void drawText(xcb_connection_t *c,
-        xcb_screen_t     *screen,
-        xcb_window_t      window,
-        int16_t           x1,
-        int16_t           y1,
-        const char       *label);
-
-
-static void
-testCookie (xcb_void_cookie_t cookie,
-        xcb_connection_t *connection,
-        char *errMessage )
+void PrintDisplayInfo(Display *display, int screen)
 {
-    xcb_generic_error_t *error = xcb_request_check (connection, cookie);
-    if (error) {
-        fprintf (stderr, "ERROR: %s : %"PRIu8"\n", errMessage , error->error_code);
-        xcb_disconnect (connection);
-        exit (-1);
-    }
+    int screen_num, display_width, display_height, width, height;
+
+    /* get screen size from display structure macro */
+    screen_num = DefaultScreen(display);
+    display_width = DisplayWidth(display, screen_num);
+    display_height = DisplayHeight(display, screen_num);
+
+    fprintf(stderr, "DisplayString: %s\n", DisplayString(display));
+    fprintf(stderr, "default screen index: %d\n", screen_num);
+    fprintf(stderr, "display width: %d\n", display_width);
+    fprintf(stderr, "display height: %d\n", display_height);
 }
-
-static void
-drawText (xcb_connection_t  *connection,
-        xcb_screen_t     *screen,
-        xcb_window_t      window,
-        int16_t           x1,
-        int16_t           y1,
-        const char       *label )
-{
-    /* get graphics context */
-    xcb_gcontext_t gc = getFontGC (connection, screen, window, "fixed");
-
-
-    /* draw the text */
-    xcb_void_cookie_t textCookie = xcb_image_text_8_checked (connection,
-            strlen (label),
-            window,
-            gc,
-            x1, y1,
-            label );
-
-    testCookie(textCookie, connection, "can't paste text");
-
-
-    /* free the gc */
-    xcb_void_cookie_t gcCookie = xcb_free_gc (connection, gc);
-
-    testCookie(gcCookie, connection, "can't free gc");
-}
-
-
-static xcb_gc_t
-getFontGC(xcb_connection_t  *connection,
-          xcb_screen_t      *screen,
-          xcb_window_t       window,
-          const char        *font_name)
-{
-    /* get font */
-    xcb_font_t font = xcb_generate_id (connection);
-    xcb_void_cookie_t fontCookie = xcb_open_font_checked (connection,
-            font,
-            strlen (font_name),
-            font_name );
-
-    testCookie(fontCookie, connection, "can't open font");
-
-    /* create graphics context */
-    xcb_gcontext_t  gc            = xcb_generate_id (connection);
-    uint32_t        mask          = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-    uint32_t        value_list[3] = { screen->black_pixel,
-        screen->white_pixel,
-        font };
-
-    xcb_void_cookie_t gcCookie = xcb_create_gc_checked (connection,
-            gc,
-            window,
-            mask,
-            value_list );
-
-    testCookie(gcCookie, connection, "can't create gc");
-
-
-    /* close font */
-    fontCookie = xcb_close_font_checked (connection, font);
-
-    testCookie(fontCookie, connection, "can't close font");
-
-    return gc;
-}
-
 
 int main(void)
 {
-    /* get the connection */
-    int screenNum;
-    xcb_connection_t *connection = xcb_connect (NULL, &screenNum);
-    if (!connection) {
-        fprintf (stderr, "ERROR: can't connect to an X server\n");
-        return -1;
+    Display *display;
+    int screen;
+    Window root;
+    GC gc;
+
+    Window window;
+    Visual *visual = CopyFromParent;
+    int x, y;
+    char *msg = "hello world!";
+
+    int border_width = 2;
+    XSetWindowAttributes attr;
+    uint32 attribute_mask = CWEventMask | CWBackPixel | CWBorderPixel;
+    uint32 event_mask = ExposureMask | ButtonPressMask | KeyPressMask;
+
+
+    int done = 0;
+    XEvent event;
+
+
+    display = XOpenDisplay((char *)NULL);
+    if (display == (Display *) NULL)
+    {
+        fprintf(stderr, "unable to connect to X server [%s]\n", XDisplayName((char *) NULL));
     }
 
-    /* get the current screen */
-    xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
+    screen = DefaultScreen(display);
+    root = RootWindow(display, screen);
+    gc = DefaultGC(display, screen);
+    PrintDisplayInfo(display, screen);
 
-    // we want the screen at index screenNum of the iterator
-    for (int i = 0; i < screenNum; ++i) {
-        xcb_screen_next (&iter);
-    }
+    x = y = 150;
+    attr.event_mask = event_mask;
+    attr.border_pixel = BlackPixel(display, screen);
+    attr.background_pixel = WhitePixel(display, screen);
 
-    xcb_screen_t *screen = iter.data;
+    window = XCreateWindow(display, root, x, y, screenWidth, screenHeight,
+             border_width, CopyFromParent, InputOutput,
+             visual, attribute_mask, &attr);
 
-    if (!screen) {
-        fprintf (stderr, "ERROR: can't get the current screen\n");
-        xcb_disconnect (connection);
-        return -1;
-    }
+    XSizeHints size_hints;
+	char *window_name;
+	XClassHint class_hints;
+	XWMHints window_manager_hints;
 
+    size_hints.x = x;
+	size_hints.y = y;
+	size_hints.width = screenWidth;
+	size_hints.height = screenHeight;
+	size_hints.min_width = screenWidth;
+	size_hints.min_height = screenHeight;
+	size_hints.base_width = screenWidth;
+	size_hints.base_height = screenHeight;
+	size_hints.flags = USPosition | USSize | PMinSize | PBaseSize;
+	window_name = argv[0];
+	class_hints.res_class = application_class;
+	class_hints.res_name = window_name;
+	window_manager_hints.flags = InputHint | StateHint;
+	window_manager_hints.initial_state = NormalState;
+	window_manager_hints.input = True;
 
-    /* create the window */
-    xcb_window_t window = xcb_generate_id (connection);
+	XSetWMNormalHints(display, window, &size_hints);
+	XStoreName(display, window, window_name);
+	XSetClassHint(display, window, &class_hints);
+	XSetWMHints(display, window, &window_manager_hints);
 
-    uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-    uint32_t values[2];
-    values[0] = screen->white_pixel;
-    values[1] = XCB_EVENT_MASK_KEY_RELEASE |
-        XCB_EVENT_MASK_BUTTON_PRESS |
-        XCB_EVENT_MASK_EXPOSURE |
-        XCB_EVENT_MASK_POINTER_MOTION;
+    XMapRaised(display, window);
+    XFlush(display);
 
-    xcb_void_cookie_t windowCookie = xcb_create_window_checked (connection,
-            screen->root_depth,
-            window, screen->root,
-            20, 200,
-            WIDTH, HEIGHT,
-            0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
-            screen->root_visual,
-            mask, values);
+    while (!done)
+    {
+        XNextEvent(display, &event);
+        if (event.type == Expose)
+        {
 
-    testCookie(windowCookie, connection, "can't create window");
-
-    xcb_void_cookie_t mapCookie = xcb_map_window_checked (connection, window);
-
-    testCookie(mapCookie, connection, "can't map window");
-
-    xcb_flush(connection);  // make sure window is drawn
-
-
-    /* event loop */
-    xcb_generic_event_t  *event;
-    while (1) { ;
-        if ( (event = xcb_poll_for_event(connection)) ) {
-            switch (event->response_type & ~0x80)
-            {
-                case XCB_EXPOSE:
-                {
-                    drawText(connection,
-                            screen,
-                            window,
-                            10, HEIGHT - 10,
-                            "Press ESC key to exit...");
-                } break;
-                case XCB_KEY_RELEASE:
-                {
-                    xcb_key_release_event_t *kr = (xcb_key_release_event_t *)event;
-
-                    switch (kr->detail) {
-                        /* ESC */
-                        case 9:
-                        {
-                            free (event);
-                            xcb_disconnect(connection);
-                            return 0;
-                        }
-                    }
-                    free(event);
-                }
-            }
+        }
+        else if (event.type == ButtonPress)
+        {
+            done = 1;
+        }
+        else if (event.type == KeyPress)
+        {
+            done = 1;
         }
     }
 
