@@ -4,114 +4,161 @@
 #include "base/base.h"
 #include "os/os.h"
 #include <unistd.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xos.h>
 
 const uint16 screenWidth = 1080;
 const uint16 screenHeight = 720;
 
-void PrintDisplayInfo(Display *display, int screen)
+typedef struct GWindow {
+    uint32 width, height;
+    uint32 black, white;
+
+    Display *display;
+    int screen;
+    Window window;
+    GC gc;
+
+    XEvent event;
+    KeySym key;
+
+    Atom wm_delete_window;
+
+    bool32 alive;
+} GWindow;
+
+void GWindowInit(GWindow *gw)
 {
-    int screen_num, display_width, display_height, width, height;
 
-    /* get screen size from display structure macro */
-    screen_num = DefaultScreen(display);
-    display_width = DisplayWidth(display, screen_num);
-    display_height = DisplayHeight(display, screen_num);
+    gw->alive = true;
+    gw->event = (XEvent){0};
+    gw->key = (KeySym){0};
+    gw->width = screenWidth;
+    gw->height = screenHeight;
 
-    fprintf(stderr, "DisplayString: %s\n", DisplayString(display));
-    fprintf(stderr, "default screen index: %d\n", screen_num);
-    fprintf(stderr, "display width: %d\n", display_width);
-    fprintf(stderr, "display height: %d\n", display_height);
+    gw->display = XOpenDisplay((char *)NULL);
+    gw->screen = XDefaultScreen(gw->display);
+
+    Display *display = gw->display;
+    int screen = gw->screen;
+
+    gw->black = BlackPixel(display, screen);
+    gw->white = WhitePixel(display, screen);
+
+    gw->window = XCreateSimpleWindow(display, XDefaultRootWindow(display),
+            0, 0, gw->width, gw->height, 5, gw->white, gw->black);
+
+    Window window = gw->window;
+
+    XSetStandardProperties(display, window, "x11 window", "hi", None, NULL, 0, NULL);
+
+    XSelectInput(display, window, ExposureMask | ButtonPressMask | KeyPressMask |
+                                  StructureNotifyMask);
+
+    XWindowAttributes attr = {0};
+    XGetWindowAttributes(display, window, &attr);
+
+    gw->gc = XCreateGC(display, window, 0, NULL);
+
+    XClearWindow(display, window);
+
+    XSetBackground(display, gw->gc, gw->white);
+    XSetBackground(display, gw->gc, gw->black);
+
+    // NOTE(liam): like XMapWindow but also raises to top of stack.
+    XMapRaised(display, window);
+
+    gw->wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
+}
+
+void GWindowClose(GWindow *gw)
+{
+    XFreeGC(gw->display, gw->gc);
+    XDestroyWindow(gw->display, gw->window);
+    XCloseDisplay(gw->display);
+}
+
+void GWindowDraw(GWindow *gw)
+{
+    Window window = gw->window;
+    Display *display = gw->display;
+    GC gc = gw->gc;
+
+    XClearWindow(display, window);
+    // TODO(liam): add draws here.
+
+    XSetForeground(display, gc, gw->white);
+    XSetBackground(display, gc, gw->black);
+
+    XSetFillStyle(display, gc, FillSolid);
+
+    XSetLineAttributes(display, gc, 2, LineSolid, CapRound, JoinRound);
+
+    /*XDrawPoint(display, window, gc, 300, 300);*/
+    /*XDrawLine(display, window, gc, 20, 20, 40, 100);*/
+}
+
+void GWindowEvent(GWindow *gw)
+{
+    char text[255];
+
+    XNextEvent(gw->display, &gw->event);
+    if (gw->event.type == ClientMessage)
+    {
+        if ((Atom)gw->event.xclient.data.l[0] == gw->wm_delete_window)
+        {
+            gw->alive = false;
+        }
+    }
+    else if (gw->event.type == Expose && gw->event.xexpose.count == 0)
+    {
+        /*redraw();*/
+        GWindowDraw(gw);
+    }
+    else if (gw->event.type == ConfigureNotify)
+    {
+        XConfigureEvent xce = gw->event.xconfigure;
+
+        if ((xce.width <= screenWidth && xce.width >= 400) &&
+            (xce.height <= screenHeight && xce.height >= 300))
+        {
+            gw->width = xce.width;
+            gw->height = xce.height;
+            GWindowDraw(gw);
+        }
+    }
+    else if (gw->event.type == KeyPress && XLookupString(&gw->event.xkey, text,
+                255, &gw->key, 0) == 1)
+    {
+        // NOTE(liam): KEYPRESS
+        if (text[0] == 'q' || text[0] == '\x1b')
+        {
+            gw->alive = false;
+        }
+        printf("Pressed %c!\n", text[0]);
+    }
+    if (gw->event.type == ButtonPress)
+    {
+        // NOTE(liam): MOUSE
+        printf("Mouse pressed at (%i, %i)\n",
+                gw->event.xbutton.x, gw->event.xbutton.y);
+    }
 }
 
 int main(void)
 {
-    Display *display;
-    int screen;
-    Window root;
-    GC gc;
+    struct GWindow gw = {0};
 
-    Window window;
-    Visual *visual = CopyFromParent;
-    int x, y;
-    char *msg = "hello world!";
+    GWindowInit(&gw);
 
-    int border_width = 2;
-    XSetWindowAttributes attr;
-    uint32 attribute_mask = CWEventMask | CWBackPixel | CWBorderPixel;
-    uint32 event_mask = ExposureMask | ButtonPressMask | KeyPressMask;
-
-
-    int done = 0;
-    XEvent event;
-
-
-    display = XOpenDisplay((char *)NULL);
-    if (display == (Display *) NULL)
+    while (gw.alive)
     {
-        fprintf(stderr, "unable to connect to X server [%s]\n", XDisplayName((char *) NULL));
+        GWindowEvent(&gw);
     }
 
-    screen = DefaultScreen(display);
-    root = RootWindow(display, screen);
-    gc = DefaultGC(display, screen);
-    PrintDisplayInfo(display, screen);
-
-    x = y = 150;
-    attr.event_mask = event_mask;
-    attr.border_pixel = BlackPixel(display, screen);
-    attr.background_pixel = WhitePixel(display, screen);
-
-    window = XCreateWindow(display, root, x, y, screenWidth, screenHeight,
-             border_width, CopyFromParent, InputOutput,
-             visual, attribute_mask, &attr);
-
-    XSizeHints size_hints;
-	char *window_name;
-	XClassHint class_hints;
-	XWMHints window_manager_hints;
-
-    size_hints.x = x;
-	size_hints.y = y;
-	size_hints.width = screenWidth;
-	size_hints.height = screenHeight;
-	size_hints.min_width = screenWidth;
-	size_hints.min_height = screenHeight;
-	size_hints.base_width = screenWidth;
-	size_hints.base_height = screenHeight;
-	size_hints.flags = USPosition | USSize | PMinSize | PBaseSize;
-	window_name = argv[0];
-	class_hints.res_class = application_class;
-	class_hints.res_name = window_name;
-	window_manager_hints.flags = InputHint | StateHint;
-	window_manager_hints.initial_state = NormalState;
-	window_manager_hints.input = True;
-
-	XSetWMNormalHints(display, window, &size_hints);
-	XStoreName(display, window, window_name);
-	XSetClassHint(display, window, &class_hints);
-	XSetWMHints(display, window, &window_manager_hints);
-
-    XMapRaised(display, window);
-    XFlush(display);
-
-    while (!done)
-    {
-        XNextEvent(display, &event);
-        if (event.type == Expose)
-        {
-
-        }
-        else if (event.type == ButtonPress)
-        {
-            done = 1;
-        }
-        else if (event.type == KeyPress)
-        {
-            done = 1;
-        }
-    }
-
+    GWindowClose(&gw);
     return 0;
 }
