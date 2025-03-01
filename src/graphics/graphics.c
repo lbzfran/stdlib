@@ -28,6 +28,9 @@ typedef struct GWindow {
 
     Colormap colormap;
 
+    uint32 fontHeight;
+    uint32 screenRows, screenCols;
+
     Atom wm_delete_window;
     bool32 alive;
 } GWindow;
@@ -45,6 +48,8 @@ void GWindowFont(GWindow *gw, char *font_name)
         fprintf(stderr, "XLoadQueryFont: failed to load font '%s'\n", font_name);
     }
     XSetFont(gw->display, gw->gc, gw->font->fid);
+
+    gw->fontHeight = gw->font->ascent + gw->font->descent;
 }
 
 void GWindowInit(GWindow *gw)
@@ -66,7 +71,7 @@ void GWindowInit(GWindow *gw)
     gw->white = WhitePixel(display, screen);
 
     gw->window = XCreateSimpleWindow(display, DefaultRootWindow(display),
-            0, 0, gw->width, gw->height, 5, gw->white, gw->black);
+            0, 0, gw->width, gw->height, 2, gw->white, gw->black);
 
     Window window = gw->window;
 
@@ -85,6 +90,7 @@ void GWindowInit(GWindow *gw)
     XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
 
     GWindowFont(gw, "6x13");
+
 
     XSizeHints *win_size_hints = XAllocSizeHints();
     if (!win_size_hints)
@@ -132,18 +138,26 @@ void GWindowFree(GWindow *gw)
 
 void GWindowWrite(GWindow *gw, char *s, memory_index len)
 {
-    int x, y;
+    static int x;
+    static int y = 0;
     int string_width;
-    int font_height;
 
-    font_height = gw->font->ascent + gw->font->descent;
     string_width = XTextWidth(gw->font, s, len);
 
-    x = (gw->width - string_width) / 2;
-    y = (gw->height - font_height) / 2;
+    x = string_width;
+
+    if (x == screenWidth)
+    {
+        x = 0;
+    }
+    x += 10;
+    if (y == screenHeight)
+    {
+        y = string_width;
+    }
+    y += 10;
     XDrawString(gw->display, gw->window, gw->gc, x, y, s, len);
 }
-
 
 void GWindowDraw(GWindow *gw)
 {
@@ -162,11 +176,9 @@ void GWindowDraw(GWindow *gw)
     XSetLineAttributes(display, gc, 2, LineSolid, CapRound, JoinRound);
 
     GWindowWrite(gw, "howdy", 5);
-
-    /*XDrawPoint(display, window, gc, 300, 300);*/
-    /*XDrawLine(display, window, gc, 20, 20, 40, 100);*/
+    XDrawPoint(display, window, gc, 300, 300);
+    XDrawLine(display, window, gc, 20, 20, 40, 100);
 }
-
 
 void GWindowEvent(GWindow *gw)
 {
@@ -197,8 +209,8 @@ void GWindowEvent(GWindow *gw)
             GWindowDraw(gw);
         }
     }
-    else if (gw->event.type == KeyPress && XLookupString(&gw->event.xkey, text,
-                255, &gw->key, 0) == 1)
+    else if (gw->event.type == KeyPress &&
+             XLookupString(&gw->event.xkey, text, 255, &gw->key, 0) == 1)
     {
         // NOTE(liam): KEYPRESS
         if (text[0] == 'q' || text[0] == '\x1b')
@@ -211,7 +223,7 @@ void GWindowEvent(GWindow *gw)
     {
         // NOTE(liam): MOUSE
         printf("Mouse pressed at (%i, %i)\n",
-                gw->event.xbutton.x, gw->event.xbutton.y);
+               gw->event.xbutton.x, gw->event.xbutton.y);
     }
 }
 
@@ -223,6 +235,7 @@ int main(void)
 
     while (gw.alive)
     {
+        GWindowDraw(&gw);
         GWindowEvent(&gw);
     }
 
