@@ -9,7 +9,7 @@
 #define RANDOM_H
 
 #include "def.h"
-#include "math.h"
+#include "math/math.h"
 
 static const uint32 MaxRandomNumber = 32768;
 static const uint32 RandomSalt = 12345; // arbitrary value

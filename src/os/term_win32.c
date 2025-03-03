@@ -47,16 +47,30 @@ void TermDisableRawMode(struct termios *tm)
 void TermEnableRawMode(struct termios *tm)
 {
     // Get handles for stdin and stdout
-    HANDLE hstdin = GetStdHandle(STD_INPUT_HANDLE);
+    // HANDLE hstdin = GetStdHandle(STD_INPUT_HANDLE);
+    // if (hstdin == INVALID_HANDLE_VALUE)
+    // {
+    //     TermDie("GetStdHandle: stdin");
+    // }
+
+    // HANDLE hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    // if (hstdout == INVALID_HANDLE_VALUE)
+    // {
+    //     TermDie("GetStdHandle: stdout");
+    // }
+
+    HANDLE hstdin = CreateFile("CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                 NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hstdin == INVALID_HANDLE_VALUE)
     {
-        TermDie("GetStdHandle: stdin");
+        TermDie("CreateFile: stdin");
     }
 
-    HANDLE hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hstdout == INVALID_HANDLE_VALUE)
+    HANDLE hstdout = CreateFile("CONOUT$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                 NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hstdin == INVALID_HANDLE_VALUE)
     {
-        TermDie("GetStdHandle: stdout");
+        TermDie("CreateFile: stdout");
     }
 
     // Set console to "raw" mode

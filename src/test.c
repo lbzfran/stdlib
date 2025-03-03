@@ -13,16 +13,16 @@ int main(void)
     /*ShellExecStringList(&arena, sl);*/
 
     TermSettings ts = {0};
-    TermSettingsInit(&ts);
+    // TermSettingsInit(&ts);
 
     TermEnableRawMode(&ts.orig_termios);
 
-    TermSetStatusMessage(&ts, "HELP: C-Q = Quit");
-    while (ts.alive)
-    {
-        TermRender(&arena, &ts);
-        TermProcessKeypress(&arena, &ts);
-    }
+    // TermSetStatusMessage(&ts, "HELP: C-Q = Quit");
+    // while (ts.alive)
+    // {
+    //     TermRender(&arena, &ts);
+    //     TermProcessKeypress(&arena, &ts);
+    // }
 
     TermDisableRawMode(&ts.orig_termios);
     ArenaFree(&arena);

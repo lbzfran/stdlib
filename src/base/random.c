@@ -1,4 +1,5 @@
 
+#include "math/math.h"
 #include "random.h"
 
 inline RandomSeries

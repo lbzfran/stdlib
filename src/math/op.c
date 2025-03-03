@@ -1,6 +1,5 @@
 
-#include "def.h"
-#include "math.h"
+#include "op.h"
 #include <math.h>
 
 float32
