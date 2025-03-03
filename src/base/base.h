@@ -7,6 +7,7 @@
 #include "math.h"
 #include "random.h"
 #include "string.h"
+#include "ds.h"
 /*#include "vector.h"*/
 /*#include "ds.h"*/
 /*#include "log.h"*/
