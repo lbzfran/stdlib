@@ -5,7 +5,7 @@ SRC="./src"
 BUILD_DEBUG="1"
 # add the test cases to build here (separated by layers)
 # i.e. BUILD_CORES=("base" "os")
-BUILD_CORES=("term")
+BUILD_CORES=("graphics")
 
 BUILD_PLATFORM="${1:-"linux"}"
 
