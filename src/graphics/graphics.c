@@ -23,9 +23,10 @@ typedef struct GWindow {
 
     Display *display;
     int screen;
-    Window window;
+    Window root, window;
     GC gc;
-    Visual *visual;
+    /*Visual *visual;*/
+    XVisualInfo *visual;
 
     XFontStruct *font;
 
@@ -36,6 +37,11 @@ typedef struct GWindow {
 
     uint32 fontHeight;
     uint32 screenRows, screenCols;
+
+    // GL
+    GLXFBConfig *fbconfigs, fbconfig;
+    int numfbconfigs;
+    GLXWindow glx_window;
 
     Atom wm_delete_window;
     bool32 alive;
@@ -66,9 +72,121 @@ void GWindowFont(GWindow *gw, char *font_name)
     gw->fontHeight = gw->font->ascent + gw->font->descent;
 }
 
-void GWindowInit(GWindow *gw, bool32 glx_enabled)
+void GWindowGLInit(GWindow *gw)
 {
+	XSetWindowAttributes attr = {0,};
 
+    gw->alive = true;
+    gw->event = (XEvent){0};
+    gw->key = (KeySym){0};
+    gw->width = screenWidth;
+    gw->height = screenHeight;
+
+    gw->display = XOpenDisplay((char *)NULL);
+    gw->screen = DefaultScreen(gw->display);
+    gw->root = RootWindow(gw->display, gw->screen);
+
+    int visdata[] = {
+        GLX_RENDER_TYPE, GLX_RGBA_BIT,
+        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+        GLX_DOUBLEBUFFER, True,
+        GLX_RED_SIZE, 8,
+        GLX_GREEN_SIZE, 8,
+        GLX_BLUE_SIZE, 8,
+        GLX_ALPHA_SIZE, 8,
+        GLX_DEPTH_SIZE, 16,
+        None
+    };
+
+    gw->fbconfigs = glXChooseFBConfig(gw->display, gw->screen, visdata, &gw->numfbconfigs);
+    gw->fbconfig = 0;
+
+    for (uint32 i = 0; i < gw->numfbconfigs; i++)
+    {
+        gw->visual = (XVisualInfo *)glXGetVisualFromFBConfig(gw->display, gw->fbconfigs[i]);
+
+        if (!visual)
+        {
+            continue;
+        }
+
+        pict_format = XRenderFindVisualFormat(gw->display, gw->visual->visual);
+        if (!pict_format)
+        {
+            continue;
+        }
+
+        gw->fbconfig = gw->fbconfigs[i];
+        if (pict_format->direct.alphaMask > 0)
+        {
+            break;
+        }
+        XFree(visual);
+    }
+
+    if (!fbconfig)
+    {
+
+    }
+
+    // describe_fbconfig
+
+    gw->colormap = XCreateColormap(gw->display, gw->visual->visual, AllocNone);
+
+    attr.colormap = gw->colormap;
+    attr.background_pixmap = None;
+    atrr.border_pixmap = None;
+    attr.border_pixel = 0;
+    attr.event_mask = ExposureMask | ButtonPressMask | EnterWindowMask |
+                      LeaveWindowMask |KeyPressMask | StructureNotifyMask;
+
+    int x = gw->width / 2;
+    int y = gw->height / 2;
+    int attr_mask = CWColormap | CWBorderPixel | CWEventMask;
+
+    gw->window = XCreateWindow(
+        gw->display,
+        gw->root,
+        x, y,
+        gw->width, gw->height,
+        gw->visual->depth,
+        InputOutput,
+        gw->visual->visual,
+        attr_mask,
+        &attr
+    );
+
+    int glXattr[] = { None };
+    gw->glx_window = glXCreateWindow(gw->display, gw->fbconfig, gw->window, glXattr);
+
+    XEvent event;
+
+	XSizeHints hints;
+    hints.x = x;
+    hints.y = y;
+    hints.width = gw->width;
+    hints.height = gw->height;
+    hints.flags = USPosition | USSize;
+
+	XWMHints *startup_state = XAllocWMHints();
+    startup_state->initial_state = NormalState;
+    startup_state->flags = StateHint;
+
+    XSetWMProperties(gw->display, gw->window, NULL, NULL, NULL, 0,
+                     &hints, startup_state, NULL);
+
+    XFree(startup_state);
+
+    XMapRaised(gw->display, gw->window);
+    XIfEvent(gw->display, &gw->event, WaitForMapNotify, (char *)&gw->window);
+
+    if ((gw->wm_delete_window = XInternAtom(gw->display, "WM_DELETE_WINDOW", 0)) != None) {
+		XSetWMProtocols(gw->display, gw->window, &gw->wm_delete_window, 1);
+	}
+}
+
+void GWindowInit(GWindow *gw)
+{
     gw->alive = true;
     gw->event = (XEvent){0};
     gw->key = (KeySym){0};
@@ -81,172 +199,59 @@ void GWindowInit(GWindow *gw, bool32 glx_enabled)
     Display *display = gw->display;
     int screen = gw->screen;
 
-    if (glx_enabled)
-    {
-        int visual_attribs[] = {
-            GLX_X_RENDERABLE    , True,
-            GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
-            GLX_RENDER_TYPE     , GLX_RGBA_BIT,
-            GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
-            glx_red_size        , 8,
-            glx_green_size      , 8,
-            glx_blue_size       , 8,
-            glx_alpha_size      , 8,
-            glx_depth_size      , 24,
-            glx_stencil_size    , 8,
-            glx_doublebuffer    , true,
-            //glx_sample_buffers  , 1,
-            //glx_samples         , 4,
-            none
-        };
+    gw->black = BlackPixel(display, screen);
+    gw->white = WhitePixel(display, screen);
 
-        int glx_major, glx_minor;
-        if ( !glxQueryVersion( display, &glx_major, &glx_minor ) ||
-                ( ( glx_major == 1 ) && ( glx_minor < 3 ) ) || ( glx_major < 1 ) )
-        {
-            printf("invalid glx version");
-            return false;
-        }
-
-        int fbcount;
-        GLXFBConfig *fbc = glxChooseFBConfig(display, screen, visual_attribs, &fbcount);
-        if (!fbc)
-        {
-            printf( "failed to retrieve a framebuffer config\n" );
-            return false;
-        }
-
-        int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
-
-        for (int i = 0; i < fbcount; i++)
-        {
-            XVisualInfo *vi = glXGetVisualFromFBConfig(display, fbc[i]);
-            if (vi)
-            {
-            int samp_buf, samples;
-            glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf);
-            glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLES, &samples);
-
-            if (best_fbc < 0 || samp_buf && samples > best_num_samp)
-            {
-                best_fbc = i;
-                best_num_samp = samples;
-            }
-            if (worst_fbc < 0 || !samp_buf || samples < worst_num_samp)
-            {
-                worst_fbc = i;
-                worst_num_samp = samples;
-            }
-        }
-        XFree(vi);
-    }
-
-    GLXFBConfig bestfbc = fbc[best_fbc];
-
-    XFree(fbc);
-
-    XVisualInfo *vi = glXGetVisualFromFBConfig(display, bestfbc);
-
-    // creating colormap
-    XSetWindoAattributes swa;
-    gw->colormap;
-    swa.colormap = gw->cmap = xcreatecolormap(display,
-                                          rootwindow(display, vi->screen),
-                                          vi->visual, allocnone);
-    swa.background_pixmap = none;
-    swa.border_pixel= 0;
-    swa.event_mask = structurenotifymask;
-
-    gw->window = XCreateWindow(display, RootWindow(display, vi->screen),
-                               0, 0, 100, 100, 0, vi->depth, InputOutput,
-                               vi->visual,
-                               CWBorderPixel | CWColormap | CWEventMask, &swa);
+    gw->window = XCreateSimpleWindow(display, DefaultRootWindow(display),
+            0, 0, gw->width, gw->height, 2, gw->white, gw->black);
 
     Window window = gw->window;
 
-    XFree(vi);
+    XSetStandardProperties(display, window, "x11 window", "hi", None, NULL, 0, NULL);
+    /*XSetWMIconName(display, window, ...);*/
 
-    XStoreName(display, window, "x11+gl window");
+    XSelectInput(display, window, ExposureMask | ButtonPressMask |
+            KeyPressMask | StructureNotifyMask);
 
-    XMapRaised(display, window);
+    XWindowAttributes attr = {0};
+    XGetWindowAttributes(display, window, &attr);
 
-    const char *glxExts = glXQueryExtensionsString(display, screen);
+    gw->gc = XCreateGC(display, window, 0, NULL);
 
-    glXCreateContextAttribsARBPRoc glXCreateContextAttribsARB = 0;
-    glXCreateContextAttribsARB  = (glXCreateContextAttribsARBPRoc)
-        glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
+    gw->wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
 
-    GLXContext ctx = 0;
+    GWindowFont(gw, "6x13");
 
-    int context_attribs[] = {
-        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-        GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-        None
-    };
 
-    ctx = GlXCreateContextAttribsARB(display, bestFbc, 0, True, context_attribs);
-    XSync(display, False);
-
-    glXMakeCurrent(display, win, ctx);
-
-    }
-    else
+    XSizeHints *win_size_hints = XAllocSizeHints();
+    if (!win_size_hints)
     {
-        gw->black = BlackPixel(display, screen);
-        gw->white = WhitePixel(display, screen);
-
-        gw->window = XCreateSimpleWindow(display, DefaultRootWindow(display),
-                0, 0, gw->width, gw->height, 2, gw->white, gw->black);
-
-        Window window = gw->window;
-
-        XSetStandardProperties(display, window, "x11 window", "hi", None, NULL, 0, NULL);
-        /*XSetWMIconName(display, window, ...);*/
-
-        XSelectInput(display, window, ExposureMask | ButtonPressMask |
-                KeyPressMask | StructureNotifyMask);
-
-        XWindowAttributes attr = {0};
-        XGetWindowAttributes(display, window, &attr);
-
-        gw->gc = XCreateGC(display, window, 0, NULL);
-
-        gw->wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
-        XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
-
-        GWindowFont(gw, "6x13");
-
-
-        XSizeHints *win_size_hints = XAllocSizeHints();
-        if (!win_size_hints)
-        {
-            fprintf(stderr, "XAllocSizeHints unable to allocate memory\n");
-            return;
-        }
-
-        // NOTE(liam): preferred window sizing
-        win_size_hints->flags = PSize | PMinSize;
-
-        win_size_hints->min_width = 300;
-        win_size_hints->min_height = 200;
-        win_size_hints->base_width = screenWidth;
-        win_size_hints->base_height = screenHeight;
-
-        XSetWMNormalHints(display, window, win_size_hints);
-        XFree(win_size_hints);
-
-        gw->colormap = DefaultColormap(display, screen);
-
-        XClearWindow(display, window);
-
-        XSetBackground(display, gw->gc, gw->white);
-        XSetBackground(display, gw->gc, gw->black);
-
-        // NOTE(liam): like XMapWindow but also raises to top of stack.
-        XMapRaised(display, window);
-        XFlush(display);
+        fprintf(stderr, "XAllocSizeHints unable to allocate memory\n");
+        return;
     }
 
+    // NOTE(liam): preferred window sizing
+    win_size_hints->flags = PSize | PMinSize;
+
+    win_size_hints->min_width = 300;
+    win_size_hints->min_height = 200;
+    win_size_hints->base_width = screenWidth;
+    win_size_hints->base_height = screenHeight;
+
+    XSetWMNormalHints(display, window, win_size_hints);
+    XFree(win_size_hints);
+
+    gw->colormap = DefaultColormap(display, screen);
+
+    XClearWindow(display, window);
+
+    XSetBackground(display, gw->gc, gw->white);
+    XSetBackground(display, gw->gc, gw->black);
+
+    // NOTE(liam): like XMapWindow but also raises to top of stack.
+    XMapRaised(display, window);
+    XFlush(display);
 }
 
 void GWindowFree(GWindow *gw)
@@ -261,7 +266,10 @@ void GWindowFree(GWindow *gw)
     {
         XFreeColormap(gw->display, gw->colormap);
     }
-    XFreeGC(gw->display, gw->gc);
+    if (gw->gc)
+    {
+        XFreeGC(gw->display, gw->gc);
+    }
     XDestroyWindow(gw->display, gw->window);
     XCloseDisplay(gw->display);
 }
