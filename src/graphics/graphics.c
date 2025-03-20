@@ -17,9 +17,25 @@ const uint16 screenHeight = 720;
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, bool32, const int*);
 
+typedef struct Color {
+    uint8 r, g, b;
+    uint8 a;
+} Color;
+
+Color GColor()
+{
+    // returns white.
+    return (Color){ 255, 255, 255, 255 };
+}
+
+// used for screen space nav
+typedef struct Vector2u {
+    uint32 x, y;
+} Vector2u;
+
 typedef struct GWindow {
     uint32 width, height;
-    /*uint32 black, white;*/
+    uint32 black, white;
 
     Display *display;
     int screen;
@@ -47,13 +63,17 @@ typedef struct GWindow {
     bool32 alive;
 } GWindow;
 
-typedef struct GConfig {
 
-} GConfig;
+uint32 GColorConvert(GWindow *gw, Color c)
+{
+    XColor xc = (XColor){
+	.red = c.r, .green = c.g, .blue = c.b,
+	.flags = DoRed | DoGreen | DoBlue
+    };
 
-typedef struct GLConfig {
-
-} GLConfig;
+    XAllocColor(gw->display, gw->colormap, &xc);
+    return xc.pixel;
+}
 
 void GWindowFont(GWindow *gw, char *font_name)
 {
@@ -72,118 +92,6 @@ void GWindowFont(GWindow *gw, char *font_name)
     gw->fontHeight = gw->font->ascent + gw->font->descent;
 }
 
-void GWindowGLInit(GWindow *gw)
-{
-	XSetWindowAttributes attr = {0,};
-
-    gw->alive = true;
-    gw->event = (XEvent){0};
-    gw->key = (KeySym){0};
-    gw->width = screenWidth;
-    gw->height = screenHeight;
-
-    gw->display = XOpenDisplay((char *)NULL);
-    gw->screen = DefaultScreen(gw->display);
-    gw->root = RootWindow(gw->display, gw->screen);
-
-    int visdata[] = {
-        GLX_RENDER_TYPE, GLX_RGBA_BIT,
-        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
-        GLX_DOUBLEBUFFER, True,
-        GLX_RED_SIZE, 8,
-        GLX_GREEN_SIZE, 8,
-        GLX_BLUE_SIZE, 8,
-        GLX_ALPHA_SIZE, 8,
-        GLX_DEPTH_SIZE, 16,
-        None
-    };
-
-    gw->fbconfigs = glXChooseFBConfig(gw->display, gw->screen, visdata, &gw->numfbconfigs);
-    gw->fbconfig = 0;
-
-    for (uint32 i = 0; i < gw->numfbconfigs; i++)
-    {
-        gw->visual = (XVisualInfo *)glXGetVisualFromFBConfig(gw->display, gw->fbconfigs[i]);
-
-        if (!visual)
-        {
-            continue;
-        }
-
-        pict_format = XRenderFindVisualFormat(gw->display, gw->visual->visual);
-        if (!pict_format)
-        {
-            continue;
-        }
-
-        gw->fbconfig = gw->fbconfigs[i];
-        if (pict_format->direct.alphaMask > 0)
-        {
-            break;
-        }
-        XFree(visual);
-    }
-
-    if (!fbconfig)
-    {
-
-    }
-
-    // describe_fbconfig
-
-    gw->colormap = XCreateColormap(gw->display, gw->visual->visual, AllocNone);
-
-    attr.colormap = gw->colormap;
-    attr.background_pixmap = None;
-    atrr.border_pixmap = None;
-    attr.border_pixel = 0;
-    attr.event_mask = ExposureMask | ButtonPressMask | EnterWindowMask |
-                      LeaveWindowMask |KeyPressMask | StructureNotifyMask;
-
-    int x = gw->width / 2;
-    int y = gw->height / 2;
-    int attr_mask = CWColormap | CWBorderPixel | CWEventMask;
-
-    gw->window = XCreateWindow(
-        gw->display,
-        gw->root,
-        x, y,
-        gw->width, gw->height,
-        gw->visual->depth,
-        InputOutput,
-        gw->visual->visual,
-        attr_mask,
-        &attr
-    );
-
-    int glXattr[] = { None };
-    gw->glx_window = glXCreateWindow(gw->display, gw->fbconfig, gw->window, glXattr);
-
-    XEvent event;
-
-	XSizeHints hints;
-    hints.x = x;
-    hints.y = y;
-    hints.width = gw->width;
-    hints.height = gw->height;
-    hints.flags = USPosition | USSize;
-
-	XWMHints *startup_state = XAllocWMHints();
-    startup_state->initial_state = NormalState;
-    startup_state->flags = StateHint;
-
-    XSetWMProperties(gw->display, gw->window, NULL, NULL, NULL, 0,
-                     &hints, startup_state, NULL);
-
-    XFree(startup_state);
-
-    XMapRaised(gw->display, gw->window);
-    XIfEvent(gw->display, &gw->event, WaitForMapNotify, (char *)&gw->window);
-
-    if ((gw->wm_delete_window = XInternAtom(gw->display, "WM_DELETE_WINDOW", 0)) != None) {
-		XSetWMProtocols(gw->display, gw->window, &gw->wm_delete_window, 1);
-	}
-}
 
 void GWindowInit(GWindow *gw)
 {
@@ -246,7 +154,7 @@ void GWindowInit(GWindow *gw)
 
     XClearWindow(display, window);
 
-    XSetBackground(display, gw->gc, gw->white);
+    XSetForeground(display, gw->gc, gw->white);
     XSetBackground(display, gw->gc, gw->black);
 
     // NOTE(liam): like XMapWindow but also raises to top of stack.
@@ -297,6 +205,25 @@ void GWindowWrite(GWindow *gw, char *s, memory_index len)
     XDrawString(gw->display, gw->window, gw->gc, x, y, s, len);
 }
 
+void GWindowDrawPixel(GWindow *gw, Vector2u pos, uint32 color_pixel)
+{    
+    XSetForeground(gw->display, gw->gc, color_pixel); 
+    XDrawPoint(gw->display, gw->window, gw->gc, (int)pos.x, (int)pos.y);
+}
+
+void GWindowDrawLine(GWindow *gw, Vector2u a, Vector2u b, uint32 color_pixel)
+{
+    XSetForeground(gw->display, gw->gc, color_pixel);
+    XDrawLine(gw->display, gw->window, gw->gc, (int)a.x, (int)a.y, (int)b.x, (int)b.y);
+}
+
+void GWindowDrawTriangle(GWindow *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pixel)
+{
+    GWindowDrawLine(gw, a, b, color_pixel);
+    GWindowDrawLine(gw, b, c, color_pixel);
+    GWindowDrawLine(gw, c, a, color_pixel);
+}
+
 void GWindowDraw(GWindow *gw)
 {
     Window window = gw->window;
@@ -304,18 +231,20 @@ void GWindowDraw(GWindow *gw)
     GC gc = gw->gc;
 
     XClearWindow(display, window);
-    // TODO(liam): add draws here.
-
+    // TODO(liam): add draws here
     XSetForeground(display, gc, gw->white);
     XSetBackground(display, gc, gw->black);
 
-    XSetFillStyle(display, gc, FillSolid);
+    //XSetFillStyle(display, gc, FillSolid);
 
-    XSetLineAttributes(display, gc, 2, LineSolid, CapRound, JoinRound);
+    //XSetLineAttributes(display, gc, 2, LineSolid, CapRound, JoinRound);
 
-    GWindowWrite(gw, "howdy", 5);
-    XDrawPoint(display, window, gc, 300, 300);
-    XDrawLine(display, window, gc, 20, 20, 40, 100);
+    // TODO: color not being properly taken
+    Color c = GColor();
+    uint32 pix = GColorConvert(gw, c);
+    // printf("pix value: %d | white value %d\n", pix, gw->white);
+    
+    GWindowDrawTriangle(gw, (Vector2u){100, 300}, (Vector2u){300, 200}, (Vector2u){600, 100}, gw->white);
 }
 
 void GWindowEvent(GWindow *gw)
@@ -369,7 +298,7 @@ int main(void)
 {
     struct GWindow gw = {0};
 
-    GWindowInit(&gw, true);
+    GWindowInit(&gw);
 
     while (gw.alive)
     {
