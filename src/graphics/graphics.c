@@ -9,13 +9,9 @@
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
 
-#include <GL/gl.h>
-#include <GL/glx.h>
-
 const uint16 screenWidth = 1080;
 const uint16 screenHeight = 720;
 
-typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, bool32, const int*);
 
 typedef struct Color {
     uint8 r, g, b;
@@ -25,7 +21,7 @@ typedef struct Color {
 Color GColor()
 {
     // returns white.
-    return (Color){ 255, 255, 255, 255 };
+    return (Color){ 255, 0, 255, 255 };
 }
 
 // used for screen space nav
@@ -36,6 +32,8 @@ typedef struct Vector2u {
 typedef struct GWindow {
     uint32 width, height;
     uint32 black, white;
+
+    uint32 mouseX, mouseY;
 
     Display *display;
     int screen;
@@ -55,24 +53,20 @@ typedef struct GWindow {
     uint32 screenRows, screenCols;
 
     // GL
-    GLXFBConfig *fbconfigs, fbconfig;
-    int numfbconfigs;
-    GLXWindow glx_window;
+    /*GLXFBConfig *fbconfigs, fbconfig;*/
+    /*int numfbconfigs;*/
+    /*GLXWindow glx_window;*/
 
     Atom wm_delete_window;
     bool32 alive;
 } GWindow;
 
 
-uint32 GColorConvert(GWindow *gw, Color c)
+uint32 GColorConvert(Color c)
 {
-    XColor xc = (XColor){
-	.red = c.r, .green = c.g, .blue = c.b,
-	.flags = DoRed | DoGreen | DoBlue
-    };
+    uint32 color = (c.r << 16) | (c.g << 8) | c.b;
 
-    XAllocColor(gw->display, gw->colormap, &xc);
-    return xc.pixel;
+    return color;
 }
 
 void GWindowFont(GWindow *gw, char *font_name)
@@ -101,11 +95,13 @@ void GWindowInit(GWindow *gw)
     gw->width = screenWidth;
     gw->height = screenHeight;
 
+
     gw->display = XOpenDisplay((char *)NULL);
     gw->screen = DefaultScreen(gw->display);
 
     Display *display = gw->display;
     int screen = gw->screen;
+
 
     gw->black = BlackPixel(display, screen);
     gw->white = WhitePixel(display, screen);
@@ -116,7 +112,6 @@ void GWindowInit(GWindow *gw)
     Window window = gw->window;
 
     XSetStandardProperties(display, window, "x11 window", "hi", None, NULL, 0, NULL);
-    /*XSetWMIconName(display, window, ...);*/
 
     XSelectInput(display, window, ExposureMask | ButtonPressMask |
             KeyPressMask | StructureNotifyMask);
@@ -130,7 +125,6 @@ void GWindowInit(GWindow *gw)
     XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
 
     GWindowFont(gw, "6x13");
-
 
     XSizeHints *win_size_hints = XAllocSizeHints();
     if (!win_size_hints)
@@ -206,8 +200,8 @@ void GWindowWrite(GWindow *gw, char *s, memory_index len)
 }
 
 void GWindowDrawPixel(GWindow *gw, Vector2u pos, uint32 color_pixel)
-{    
-    XSetForeground(gw->display, gw->gc, color_pixel); 
+{
+    XSetForeground(gw->display, gw->gc, color_pixel);
     XDrawPoint(gw->display, gw->window, gw->gc, (int)pos.x, (int)pos.y);
 }
 
@@ -224,73 +218,77 @@ void GWindowDrawTriangle(GWindow *gw, Vector2u a, Vector2u b, Vector2u c, uint32
     GWindowDrawLine(gw, c, a, color_pixel);
 }
 
+void GWindowClear(GWindow *gw)
+{
+    XSetForeground(gw->display, gw->gc, gw->black);
+    XFillRectangle(gw->display, gw->window, gw->gc, 0, 0, gw->width, gw->height);
+}
+
 void GWindowDraw(GWindow *gw)
 {
-    Window window = gw->window;
-    Display *display = gw->display;
-    GC gc = gw->gc;
+    Color white = GColor();
 
-    XClearWindow(display, window);
-    // TODO(liam): add draws here
-    XSetForeground(display, gc, gw->white);
-    XSetBackground(display, gc, gw->black);
-
-    //XSetFillStyle(display, gc, FillSolid);
-
-    //XSetLineAttributes(display, gc, 2, LineSolid, CapRound, JoinRound);
-
-    // TODO: color not being properly taken
-    Color c = GColor();
-    uint32 pix = GColorConvert(gw, c);
-    // printf("pix value: %d | white value %d\n", pix, gw->white);
-    
-    GWindowDrawTriangle(gw, (Vector2u){100, 300}, (Vector2u){300, 200}, (Vector2u){600, 100}, gw->white);
+    GWindowDrawTriangle(gw, (Vector2u){gw->mouseX, gw->mouseY}, (Vector2u){300, 200}, (Vector2u){600, 100}, GColorConvert(white));
 }
 
 void GWindowEvent(GWindow *gw)
 {
-    char text[255];
-
+    gw->event = (XEvent){0};
     XNextEvent(gw->display, &gw->event);
-    if (gw->event.type == ClientMessage)
-    {
-        if ((Atom)gw->event.xclient.data.l[0] == gw->wm_delete_window)
-        {
-            gw->alive = false;
-        }
-    }
-    else if (gw->event.type == Expose && gw->event.xexpose.count == 0)
-    {
-        /*redraw();*/
-        GWindowDraw(gw);
-    }
-    else if (gw->event.type == ConfigureNotify)
-    {
-        XConfigureEvent xce = gw->event.xconfigure;
 
-        if ((xce.width <= screenWidth && xce.width >= 400) &&
-            (xce.height <= screenHeight && xce.height >= 300))
-        {
-            gw->width = xce.width;
-            gw->height = xce.height;
-            GWindowDraw(gw);
-        }
-    }
-    else if (gw->event.type == KeyPress &&
-             XLookupString(&gw->event.xkey, text, 255, &gw->key, 0) == 1)
+    switch (gw->event.type)
     {
-        // NOTE(liam): KEYPRESS
-        if (text[0] == 'q' || text[0] == '\x1b')
+        case ClientMessage:
         {
-            gw->alive = false;
-        }
-        printf("Pressed %c!\n", text[0]);
-    }
-    if (gw->event.type == ButtonPress)
-    {
-        // NOTE(liam): MOUSE
-        printf("Mouse pressed at (%i, %i)\n",
-               gw->event.xbutton.x, gw->event.xbutton.y);
+            if ((Atom)gw->event.xclient.data.l[0] == gw->wm_delete_window)
+            {
+                gw->alive = false;
+            }
+        } break;
+        case Expose:
+        {
+            if (gw->event.xexpose.count == 0)
+            {
+                GWindowDraw(gw);
+            }
+        } break;
+        case ConfigureNotify:
+        {
+            XConfigureEvent xce = gw->event.xconfigure;
+
+            if ((xce.width <= screenWidth && xce.width >= 400) &&
+                    (xce.height <= screenHeight && xce.height >= 300))
+            {
+                gw->width = xce.width;
+                gw->height = xce.height;
+                GWindowDraw(gw);
+            }
+        } break;
+        case KeyPress:
+        {
+            char key = XLookupKeysym(&gw->event.xkey, 0);
+            switch (key)
+            {
+                case '\x1b':
+                case 'q':
+                    {
+                        gw->alive = false;
+                    } __attribute__((fallthrough));
+                default:
+                    {
+                        printf("Pressed %c!\n", key);
+                    } break;
+            }
+        } break;
+        case ButtonPress:
+        {
+            printf("Mouse pressed at (%i, %i)\n",
+                    gw->event.xbutton.x, gw->event.xbutton.y);
+            gw->mouseX = gw->event.xbutton.x;
+            gw->mouseY = gw->event.xbutton.y;
+        } break;
+        default:
+        {} break;
     }
 }
 
@@ -302,8 +300,10 @@ int main(void)
 
     while (gw.alive)
     {
-        GWindowDraw(&gw);
         GWindowEvent(&gw);
+
+        GWindowClear(&gw);
+        GWindowDraw(&gw);
     }
 
     GWindowFree(&gw);
