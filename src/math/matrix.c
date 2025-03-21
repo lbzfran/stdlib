@@ -112,6 +112,10 @@ MatrixIdentity(Matrix a)
             {
                 MatrixAT(a, i, j) = 1;
             }
+            else
+            {
+                MatrixAT(a, i, j) = 0;
+            }
         }
     }
 

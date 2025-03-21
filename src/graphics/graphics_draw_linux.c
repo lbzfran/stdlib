@@ -83,9 +83,11 @@ void GDrawTriangle(GWin *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pi
 // TODO(liam): big todo
 // 3D Rendering
 
-void buildModelMatrix(Arena *arena, Matrix *model, Row position, Row orientation, Row scale)
+void buildModelMatrix(Arena *arena, Matrix model, Row position, Row orientation, Row scale)
 {
     ArenaTemp tmp = ArenaScratchCreate(arena);
+
+    MatrixIdentity(model);
 
     Matrix matScale     = MatrixIdentity(Matrix4DAlloc(arena));
     Matrix matTranslate = MatrixIdentity(Matrix4DAlloc(arena));
@@ -122,8 +124,7 @@ void buildModelMatrix(Arena *arena, Matrix *model, Row position, Row orientation
     MatrixDot_(model, matRotRoll, model);
     MatrixDot_(model, matTranslate, model);
 
-    ArenaScratchFree(&tmp);
-    return model;
+    ArenaScratchFree(tmp);
 }
 
 
