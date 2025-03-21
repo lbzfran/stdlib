@@ -4,5 +4,6 @@
 #include "limit.h"
 #include "op.h"
 #include "vector.h"
+#include "matrix.h"
 
 #endif

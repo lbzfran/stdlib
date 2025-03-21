@@ -9,12 +9,11 @@
 #define RANDOM_H
 
 #include "def.h"
-#include "math/math.h"
 
 static const uint32 MaxRandomNumber = 32768;
 static const uint32 RandomSalt = 12345; // arbitrary value
 
-typedef struct random_series {
+typedef struct RandomSeries {
     uint32 index;
 } RandomSeries;
 

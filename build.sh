@@ -17,7 +17,7 @@ LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"
 LAYER_BASE_WIN32="$SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_win32.c $SRC/base/random.c"
 LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c $SRC/os/term_win32.c $SRC/os/unistd_win32.c"
 
-LAYER_MATH="$SRC/math/vector.c $SRC/math/op.c"
+LAYER_MATH="$SRC/math/vector.c $SRC/math/op.c $SRC/math/matrix.c"
 
 CC=gcc
 INC="-I./src"
