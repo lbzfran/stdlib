@@ -2,6 +2,8 @@
 #include "graphics_linux.h"
 #include "graphics_draw_linux.c"
 
+#include <X11/XKBlib.h>
+
 void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 event_masks)
 {
     gw->alive = true;
@@ -35,7 +37,7 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
     if (event_masks == 0)
     {
 	event_masks = ButtonPressMask | KeyPressMask |
-	StructureNotifyMask | PointerMotionMask;
+        StructureNotifyMask | PointerMotionMask | KeyReleaseMask;
     }
     else
     {
@@ -64,7 +66,7 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
     XSizeHints *win_size_hints = XAllocSizeHints();
     if (!win_size_hints)
     {
-        fprintf(stderr, "XAllocSizeHints unable to allocate memory\n");
+        fprintf(stderr, "ERROR: XAllocSizeHints unable to allocate memory.\n");
         return;
     }
 
@@ -78,6 +80,15 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
 
     XSetWMNormalHints(display, window, win_size_hints);
     XFree(win_size_hints);
+
+    // extensions
+    /*Bool autorepeat_supported;*/
+    /*XkbSetDetectableAutoRepeat(display, 1, &autorepeat_supported);*/
+    /*if (!autorepeat_supported)*/
+    /*{*/
+    /*    fprintf(stderr, "INFO: Autorepeat not supported.\n");*/
+    /*}*/
+    /*XAutoRepeatOff(display);*/
 
     gw->colormap = DefaultColormap(display, screen);
 
@@ -218,12 +229,24 @@ GEKeyMod GEGetState(uint32 state)
 
 GEvent GWinEvent(GWin *gw)
 {
-    static XEvent last_event = {0};
-
-    gw->event = (XEvent){0};
-    XNextEvent(gw->display, &gw->event);
+    XEvent next_event = (XEvent){0};
+    static bool32 discard_flag = false;
 
     GEvent result = GE_Null;
+    gw->event = (XEvent){0};
+
+    XNextEvent(gw->display, &gw->event);
+
+    if (discard_flag)
+    {
+        discard_flag = false;
+        return result;
+    }
+    else if (XEventsQueued(gw->display, QueuedAfterReading))
+    {
+        XPeekEvent(gw->display, &next_event);
+    }
+
     switch (gw->event.type)
     {
         case ClientMessage:
@@ -231,7 +254,7 @@ GEvent GWinEvent(GWin *gw)
             if ((Atom)gw->event.xclient.data.l[0] == gw->wm_delete_window)
             {
                 gw->alive = false;
-		result = GE_Kill;
+                result = GE_Kill;
             }
         } break;
         /*case Expose:*/
@@ -253,28 +276,11 @@ GEvent GWinEvent(GWin *gw)
             }
             result = GE_Notify;
         } break;
-        case KeyRelease:
-        {
-	    if (last_event.type == KeyPress) break;
-	    
-            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
-            GEKeyMod mods = GEGetState(gw->event.xkey.state);
-
-            gw->keyReleased = GEGetKey(key);
-            gw->keyMods = mods;
-
-            if (gw->keyReleased)
-            {
-                printf("key released: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyReleased, key, gw->keyMods);
-            }
-
-            result = GE_KeyRelease;
-        } break;
         case KeyPress:
         {
-	    if (last_event.type == KeyPress) break;
-            // TODO(liam): record key presses.
             KeySym key = XLookupKeysym(&gw->event.xkey, 0);
+
+            // TODO(liam): record key presses.
             GEKeyMod mods = GEGetState(gw->event.xkey.state);
 
             // TODO(liam): apply the mod to key.
@@ -288,6 +294,33 @@ GEvent GWinEvent(GWin *gw)
 
             result = GE_KeyPress;
         } break;
+        case KeyRelease:
+        {
+            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
+
+            if (next_event.type == KeyRelease)
+            {
+                KeySym keyNext = XLookupKeysym(&next_event.xkey, 0);
+                if (key == keyNext)
+                {
+                    discard_flag = true;
+                    result = GWinEvent(gw);
+                    break;
+                }
+            }
+
+            GEKeyMod mods = GEGetState(gw->event.xkey.state);
+
+            gw->keyReleased = GEGetKey(key);
+            gw->keyMods = mods;
+
+            if (gw->keyReleased)
+            {
+                printf("key released: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyReleased, key, gw->keyMods);
+            }
+
+            result = GE_KeyRelease;
+        } break;
         case ButtonPress:
         {
             uint8 mouseKey = gw->event.xbutton.button;
@@ -295,7 +328,7 @@ GEvent GWinEvent(GWin *gw)
 
 	    printf("Mouse pressed: '%d' at (%i, %i)\n", gw->mouseKey, gw->event.xbutton.x, gw->event.xbutton.y);
 
-            
+
             result = GE_MousePress;
         } break;
         case MotionNotify:
@@ -308,8 +341,6 @@ GEvent GWinEvent(GWin *gw)
         default:
         {} break;
     }
-
-    last_event = gw->event;
 
     return result;
 }
