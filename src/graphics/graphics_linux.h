@@ -14,7 +14,7 @@ typedef enum {
     GE_Null = 0,
     GE_Kill,
     GE_Notify,
-    GE_KeyPress,
+    GE_KeyDown,
     GE_KeyRelease,
     GE_MousePress,
     GE_MouseRelease,
@@ -89,7 +89,7 @@ typedef struct GWin {
     XFontStruct *font;
 
     XEvent event;
-    uint32 keyPressed;
+    uint32 keyDown;
     uint32 keyReleased;
     uint32 keyMods;
     GEMouse mouseKey;

@@ -82,13 +82,12 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
     XFree(win_size_hints);
 
     // extensions
-    /*Bool autorepeat_supported;*/
-    /*XkbSetDetectableAutoRepeat(display, 1, &autorepeat_supported);*/
-    /*if (!autorepeat_supported)*/
-    /*{*/
-    /*    fprintf(stderr, "INFO: Autorepeat not supported.\n");*/
-    /*}*/
-    /*XAutoRepeatOff(display);*/
+    Bool autorepeat_supported;
+    XkbSetDetectableAutoRepeat(display, 1, &autorepeat_supported);
+    if (!autorepeat_supported)
+    {
+        fprintf(stderr, "INFO: Autorepeat not supported.\n");
+    }
 
     gw->colormap = DefaultColormap(display, screen);
 
@@ -280,25 +279,7 @@ GEvent GWinEvent(GWin *gw)
         {
             KeySym key = XLookupKeysym(&gw->event.xkey, 0);
 
-            // TODO(liam): record key presses.
-            GEKeyMod mods = GEGetState(gw->event.xkey.state);
-
-            // TODO(liam): apply the mod to key.
-            gw->keyPressed = GEGetKey(key);
-            gw->keyMods = mods;
-
-            if (gw->keyPressed)
-            {
-                printf("key pressed: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyPressed, key, gw->keyMods);
-            }
-
-            result = GE_KeyPress;
-        } break;
-        case KeyRelease:
-        {
-            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
-
-            if (next_event.type == KeyRelease)
+            if (next_event.type == KeyPress)
             {
                 KeySym keyNext = XLookupKeysym(&next_event.xkey, 0);
                 if (key == keyNext)
@@ -308,6 +289,24 @@ GEvent GWinEvent(GWin *gw)
                     break;
                 }
             }
+
+            // TODO(liam): record key presses.
+            GEKeyMod mods = GEGetState(gw->event.xkey.state);
+
+            // TODO(liam): apply the mod to key.
+            gw->keyDown = GEGetKey(key);
+            gw->keyMods = mods;
+
+            if (gw->keyDown)
+            {
+                printf("key pressed: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyDown, key, gw->keyMods);
+            }
+
+            result = GE_KeyDown;
+        } break;
+        case KeyRelease:
+        {
+            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
 
             GEKeyMod mods = GEGetState(gw->event.xkey.state);
 
