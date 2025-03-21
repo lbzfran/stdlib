@@ -6,8 +6,7 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
 {
     gw->alive = true;
     gw->event = (XEvent){0};
-    gw->keyPressed = 0;
-    gw->keyReleased = 0;
+
     gw->keyMods = 0;
     gw->width = width;
     gw->height = height;
@@ -118,22 +117,100 @@ void GWinClear(GWin *gw)
     XClearWindow(gw->display, gw->window);
 }
 
+static uint32 GEGetKey(KeySym key)
+{
+    uint32 result = GE_Key_Null;
+
+    switch (key)
+    {
+	case 65505: // shift
+	case 65506:
+        case 65507: // ctrl
+	case 65508:
+        case 65513: // alt
+	case 65514:
+	{} break;
+
+        case 65293:
+	{
+	    result = GE_Key_Enter;
+	} break;
+	case 65289:
+	{
+	    result = GE_Key_Tab;
+	} break;
+	case 65307:
+	{
+	    result = GE_Key_Escape;
+	} break;
+	case 65288:
+	{
+	    result = GE_Key_Backspace;
+	} break;
+	case 65360:
+	{
+	    result = GE_Key_Home;
+	} break;
+	case 65367:
+	{
+	    result = GE_Key_End;
+	} break;
+	case 65379:
+	{
+	    result = GE_Key_Insert;
+	} break;
+	case 65535:
+	{
+	    result = GE_Key_Delete;
+	} break;
+	case 65365:
+	{
+	    result = GE_Key_PageUp;
+	} break;
+	case 65366:
+	{
+	    result = GE_Key_PageDown;
+	} break;
+	case 65361:
+	{
+	    result = GE_Key_Left;
+	} break;
+	case 65362:
+	{
+	    result = GE_Key_Up;
+	} break;
+	case 65363:
+	{
+	    result = GE_Key_Right;
+	} break;
+	case 65364:
+	{
+	    result = GE_Key_Down;
+	} break;
+	default:
+	{
+	    if ((key > 0) && (key < 256))
+	    {
+		result = key;
+	    }
+	} break;
+    }
+
+    return result;
+}
+
 GEKeyMod GEGetState(uint32 state)
 {
     GEKeyMod mods = 0;
 
-    if (state & ShiftMask)
-        mods |= GE_Mod_Shift;
-    if (state & ControlMask)
-        mods |= GE_Mod_Ctrl;
-    if (state & Mod1Mask)
-        mods |= GE_Mod_Alt;
-    if (state & Mod4Mask)
-        mods |= GE_Mod_Super;
-    if (state & LockMask)
-        mods |= GE_Mod_CapsLock;
-    if (state & Mod2Mask)
-        mods |= GE_Mod_NumLock;
+    if (state & ShiftMask)      mods |= GE_Mod_Shift;
+    if (state & ControlMask)    mods |= GE_Mod_Ctrl;
+    if (state & Mod1Mask)       mods |= GE_Mod_Mod1;
+    if (state & Mod2Mask)       mods |= GE_Mod_Mod2;
+    if (state & Mod3Mask)       mods |= GE_Mod_Mod3;
+    if (state & Mod4Mask)       mods |= GE_Mod_Mod4;
+    if (state & Mod5Mask)       mods |= GE_Mod_Mod5;
+    if (state & LockMask)       mods |= GE_Mod_CapsLock;
 
     return mods;
 
@@ -141,6 +218,8 @@ GEKeyMod GEGetState(uint32 state)
 
 GEvent GWinEvent(GWin *gw)
 {
+    static XEvent last_event = {0};
+
     gw->event = (XEvent){0};
     XNextEvent(gw->display, &gw->event);
 
@@ -172,45 +251,52 @@ GEvent GWinEvent(GWin *gw)
                 gw->height = xce.height;
                 /*GWinDraw(gw);*/
             }
-	    result = GE_Notify;
+            result = GE_Notify;
         } break;
         case KeyRelease:
-	{
-	    char key = XLookupKeysym(&gw->event.xkey, 0);
-	    gw->keyReleased = key;
-	    result = GE_KeyRelease;
-	}
-        case KeyPress:
         {
-	    // TODO(liam): record key presses.
-	    //             support for multi-key presses.
+	    if (last_event.type == KeyPress) break;
+	    
+            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
+            GEKeyMod mods = GEGetState(gw->event.xkey.state);
 
-	    char key = XLookupKeysym(&gw->event.xkey, 0);
-	    uint32 keyMods = GEGetState(gw->event.xkey.state);
-	    switch (key)
+            gw->keyReleased = GEGetKey(key);
+            gw->keyMods = mods;
+
+            if (gw->keyReleased)
             {
-                case '\x1b':
-                case 'q':
-                {
-                    gw->alive = false;
-                } __attribute__((fallthrough));
-                default:
-                {
-                    printf("Pressed %c!\n", key);
-                } break;
+                printf("key released: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyReleased, key, gw->keyMods);
             }
 
-	    gw->keyPressed = key;
-	    gw->keyMods = keyMods;
-	    result = GE_KeyPress;
+            result = GE_KeyRelease;
+        } break;
+        case KeyPress:
+        {
+	    if (last_event.type == KeyPress) break;
+            // TODO(liam): record key presses.
+            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
+            GEKeyMod mods = GEGetState(gw->event.xkey.state);
+
+            // TODO(liam): apply the mod to key.
+            gw->keyPressed = GEGetKey(key);
+            gw->keyMods = mods;
+
+            if (gw->keyPressed)
+            {
+                printf("key pressed: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyPressed, key, gw->keyMods);
+            }
+
+            result = GE_KeyPress;
         } break;
         case ButtonPress:
         {
-	    uint8 mouseKey = gw->event.xbutton.button;
-	    printf("Mouse pressed at (%i, %i)\n", gw->event.xbutton.x, gw->event.xbutton.y);
-
+            uint8 mouseKey = gw->event.xbutton.button;
 	    gw->mouseKey = mouseKey;
-	    result = GE_MousePress;
+
+	    printf("Mouse pressed: '%d' at (%i, %i)\n", gw->mouseKey, gw->event.xbutton.x, gw->event.xbutton.y);
+
+            
+            result = GE_MousePress;
         } break;
         case MotionNotify:
 	{
@@ -222,6 +308,8 @@ GEvent GWinEvent(GWin *gw)
         default:
         {} break;
     }
+
+    last_event = gw->event;
 
     return result;
 }
