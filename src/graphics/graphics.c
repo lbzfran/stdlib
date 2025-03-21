@@ -13,7 +13,7 @@ int main(void)
 {
     GWin gw = {0};
 
-    GWinInit(&gw, "hehe", screenWidth, screenHeight, 0);
+    GWinInit(&gw, NULL, screenWidth, screenHeight, 0);
 
     while (gw.alive)
     {

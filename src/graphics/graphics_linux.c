@@ -31,23 +31,22 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
     char *actualName = win_name;
     if (actualName == NULL)
     {
-	actualName = "generic window";
+        actualName = "generic window";
     }
 
     if (event_masks == 0)
     {
-	event_masks = ButtonPressMask | KeyPressMask |
+        event_masks = ButtonPressMask | KeyPressMask |
         StructureNotifyMask | PointerMotionMask | KeyReleaseMask;
     }
     else
     {
 	// ensure this is on to keep track of resizing.
-	event_masks |= StructureNotifyMask;
+        event_masks |= StructureNotifyMask;
     }
 
 
     XSetStandardProperties(display, window, actualName, "hi", None, NULL, 0, NULL);
-
 
     // defaults
     XSelectInput(display, window, event_masks);
@@ -228,23 +227,26 @@ GEKeyMod GEGetState(uint32 state)
 
 GEvent GWinEvent(GWin *gw)
 {
-    XEvent next_event = (XEvent){0};
-    static bool32 discard_flag = false;
 
     GEvent result = GE_Null;
     gw->event = (XEvent){0};
 
     XNextEvent(gw->display, &gw->event);
 
-    if (discard_flag)
-    {
-        discard_flag = false;
-        return result;
-    }
-    else if (XEventsQueued(gw->display, QueuedAfterReading))
-    {
-        XPeekEvent(gw->display, &next_event);
-    }
+    // NOTE(liam): handle discarding events.
+    // current no use for it but
+    // i might find something for it in the future.
+    /*XEvent next_event = (XEvent){0};*/
+    /*static bool32 discard_flag = false;*/
+    /*if (discard_flag)*/
+    /*{*/
+    /*    discard_flag = false;*/
+    /*    return result;*/
+    /*}*/
+    /*else if (XEventsQueued(gw->display, QueuedAfterReading))*/
+    /*{*/
+    /*    XPeekEvent(gw->display, &next_event);*/
+    /*}*/
 
     switch (gw->event.type)
     {
@@ -256,6 +258,7 @@ GEvent GWinEvent(GWin *gw)
                 result = GE_Kill;
             }
         } break;
+        // NOTE(liam): I won't really care about exposure for any of my apps.
         /*case Expose:*/
         /*{*/
         /*    if (gw->event.xexpose.count == 0)*/
@@ -279,17 +282,6 @@ GEvent GWinEvent(GWin *gw)
         {
             KeySym key = XLookupKeysym(&gw->event.xkey, 0);
 
-            if (next_event.type == KeyPress)
-            {
-                KeySym keyNext = XLookupKeysym(&next_event.xkey, 0);
-                if (key == keyNext)
-                {
-                    discard_flag = true;
-                    result = GWinEvent(gw);
-                    break;
-                }
-            }
-
             // TODO(liam): record key presses.
             GEKeyMod mods = GEGetState(gw->event.xkey.state);
 
@@ -299,7 +291,7 @@ GEvent GWinEvent(GWin *gw)
 
             if (gw->keyDown)
             {
-                printf("key pressed: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyDown, key, gw->keyMods);
+                printf("key down: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyDown, key, gw->keyMods);
             }
 
             result = GE_KeyDown;
