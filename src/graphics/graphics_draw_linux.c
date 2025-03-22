@@ -3,7 +3,9 @@
 
 #include "math/matrix.h"
 
-/*#include <assimp.h>*/
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 Color GColor()
 {
@@ -82,6 +84,24 @@ void GDrawTriangle(GWin *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pi
 
 // TODO(liam): big todo
 // 3D Rendering
+
+void AssimpLoadMesh(Mesh3D *meshTo, const aiMesh *meshFrom)
+{
+    // TODO(liam): hehe
+}
+
+bool32 AssimpLoadAsset(const char *path)
+{
+    bool32 result = false;
+    const C_STRUCT aiScene *scene = aiImportFile(path, aiProcessPreset_TargetRealTime_MaxQuality);
+
+    if (scene)
+    {
+        result = true;
+    }
+
+    return result;
+}
 
 void buildModelMatrix(Arena *arena, Matrix model, Row position, Row orientation, Row scale)
 {

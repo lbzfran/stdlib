@@ -5,7 +5,7 @@ SRC="./src"
 BUILD_DEBUG="1"
 # add the test cases to build here (separated by layers)
 # i.e. BUILD_CORES=("base" "os")
-BUILD_CORES=("test")
+BUILD_CORES=("graphics")
 
 BUILD_PLATFORM="${1:-"linux"}"
 
@@ -55,7 +55,7 @@ elif [ "$BUILD_PLATFORM" = "linux" ]; then
     fi
 
     if [[ $BUILD_CORES == *"graphics"* ]]; then
-        $CC $FLAGS -fsanitize=address -lX11 -lXext -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX $LAYER_MATH
+        $CC $FLAGS -fsanitize=address -lX11 -lXext -lassimp -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX $LAYER_MATH
     fi
 
     if [[ $BUILD_CORES == *"term"* ]]; then
