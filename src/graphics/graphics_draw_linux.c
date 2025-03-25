@@ -7,6 +7,17 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+typedef struct {
+    uint32 *V; // simulates matrix.
+    uint32 size;
+    uint32 capacity;
+} uint32Array;
+
+typedef struct {
+    uint32Array vertices;
+    uint32Array faces;
+} Mesh3D;
+
 Color GColor()
 {
     // returns white.
@@ -85,21 +96,30 @@ void GDrawTriangle(GWin *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pi
 // TODO(liam): big todo
 // 3D Rendering
 
-void AssimpLoadMesh(Mesh3D *meshTo, const aiMesh *meshFrom)
+void AssimpLoadMesh(Arena *arena, Mesh3D *meshTo, const struct aiMesh *meshFrom)
 {
     // TODO(liam): hehe
 }
 
-bool32 AssimpLoadAsset(const char *path)
+bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path)
 {
     bool32 result = false;
-    const C_STRUCT aiScene *scene = aiImportFile(path, aiProcessPreset_TargetRealTime_MaxQuality);
+    const C_STRUCT aiScene *scene = aiImportFile(path, aiProcessPreset_TargetRealtime_MaxQuality);
 
     if (scene)
     {
         result = true;
+
+        // NOTE(liam): assume only one mesh for now.
+        const struct aiMesh *meshIn = scene->mMeshes[0];
+        assimpLoadMesh(arena, meshOut, meshIn);
+    }
+    else
+    {
+        printf("Error loading model: %s\n", aiGetErrorString());
     }
 
+    aiReleaseImport(scene);
     return result;
 }
 

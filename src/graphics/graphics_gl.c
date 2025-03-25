@@ -1,4 +1,4 @@
-typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, bool32, const int*);
+/*typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, bool32, const int*);*/
 // void GWindowGLInit(GWindow *gw)
 // {
 // 	XSetWindowAttributes attr = {0,};

@@ -9,10 +9,7 @@ Anything implemented here should be useable in other projects, and help me
 set myself up faster either through me understanding how to implement
 specific things, or having a point of reference for implementing it.
 
-The subparts will be split up, sometimes more than it should be.
-
-This split will mostly be for understanding-- so I can visually see how things
-map to each other. For actual projects, they can be more isolated and portable.
+The subparts will be split up based on functionality.
 
 current examples of mapping:
 ```
@@ -23,7 +20,13 @@ utf.h <- string.h
 
 # Notes
 
-The rest of the markdown will be my notes on the different subprojects.
+The first part focuses on my todos.
+The rest will be my notes on the different subprojects.
+
+
+## Todos
+[ ] diffing tool
+[ ] opengl context
 
 ## Base
 
