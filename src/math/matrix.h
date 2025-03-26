@@ -1,7 +1,6 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-// NOTE(liam): replace stdint include with base
 #include <stdio.h>
 #include <math.h>
 
@@ -44,10 +43,12 @@ Matrix MatrixReturnM_(Arena *, Matrix, Matrix, void (*)(Matrix, Matrix, Matrix))
 void MatrixAddM_(Matrix, Matrix, Matrix);
 void MatrixSubM_(Matrix, Matrix, Matrix);
 void MatrixMulM_(Matrix, Matrix, Matrix); // Hadamard Product
+void MatrixDivM_(Matrix, Matrix, Matrix); // Hadamard Division
 
 #define MatrixAddM(arena, a, b) MatrixReturnM_(arena, a, b, MatrixAddM_)
 #define MatrixSubM(arena, a, b) MatrixReturnM_(arena, a, b, MatrixSubM_)
 #define MatrixMulM(arena, a, b) MatrixReturnM_(arena, a, b, MatrixMulM_)
+#define MatrixDivM(arena, a, b) MatrixReturnM_(arena, a, b, MatrixDivM_)
 
 void MatrixDot_(Matrix, Matrix, Matrix);
 Matrix MatrixDot(Arena *arena, Matrix a, Matrix b);

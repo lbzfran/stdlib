@@ -9,7 +9,7 @@ BUILD_CORES=("graphics")
 
 BUILD_PLATFORM="${1:-"linux"}"
 
-LAYER_BASE_LINUX="$SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c"
+LAYER_BASE_LINUX="$SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c $SRC/base/ds.c"
 
 LAYER_OS_LINUX="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c $SRC/os/term_linux.c $SRC/os/shell_linux.c"
 LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"

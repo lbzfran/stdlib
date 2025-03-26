@@ -7,21 +7,16 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-typedef struct {
-    uint32 *V; // simulates matrix.
-    uint32 size;
-    uint32 capacity;
-} uint32Array;
 
 typedef struct {
     uint32Array vertices;
     uint32Array faces;
 } Mesh3D;
 
-Color GColor()
+Color GColor(uint8 r, uint8 g, uint8 b, uint8 a)
 {
     // returns white.
-    return (Color){ 255, 0, 255, 255 };
+    return (Color){ r, g, b, a };
 }
 
 uint32 GColorConvert(Color c)
@@ -99,6 +94,23 @@ void GDrawTriangle(GWin *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pi
 void AssimpLoadMesh(Arena *arena, Mesh3D *meshTo, const struct aiMesh *meshFrom)
 {
     // TODO(liam): hehe
+	for (uint32 i = 0; i < meshFrom->mNumVertices; i++)
+	{
+		struct aiVector3D meshVertex = meshFrom->mVertices[i];
+
+		uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.x);
+		uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.y);
+		uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.z);
+	}
+
+	for (uint32 i = 0; i < meshFrom->mNumFaces; i++)
+	{
+		struct aiFace meshFace = meshFrom->mFaces[i];
+
+		uint32ArrayAppend(arena, &meshTo->faces, meshFace.mIndices[0]);
+		uint32ArrayAppend(arena, &meshTo->faces, meshFace.mIndices[1]);
+		uint32ArrayAppend(arena, &meshTo->faces, meshFace.mIndices[2]);
+	}
 }
 
 bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path)
@@ -112,7 +124,7 @@ bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path)
 
         // NOTE(liam): assume only one mesh for now.
         const struct aiMesh *meshIn = scene->mMeshes[0];
-        assimpLoadMesh(arena, meshOut, meshIn);
+        AssimpLoadMesh(arena, meshOut, meshIn);
     }
     else
     {
@@ -125,6 +137,10 @@ bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path)
 
 void buildModelMatrix(Arena *arena, Matrix model, Row position, Row orientation, Row scale)
 {
+	Assert((model.rows == 4) && (model.cols == 4) && "model matrix must be 4x4");
+	Assert((position.cols == 3) && "position must be 1x3");
+	Assert((position.cols == orientation.cols) == scale.cols && "orientation/scale must be 1x3");
+
     ArenaTemp tmp = ArenaScratchCreate(arena);
 
     MatrixIdentity(model);
@@ -166,5 +182,3 @@ void buildModelMatrix(Arena *arena, Matrix model, Row position, Row orientation,
 
     ArenaScratchFree(tmp);
 }
-
-

@@ -20,7 +20,7 @@ int main(void)
         GWinEvent(&gw);
         GWinClear(&gw);
 
-        Color white = GColor();
+        Color white = GColor(255, 255, 255, 255);
 
         GDrawTriangle(&gw, (Vector2u){gw.mouseX, gw.mouseY}, (Vector2u){300, 200}, (Vector2u){600, 100}, GColorConvert(white));
     }

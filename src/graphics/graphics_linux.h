@@ -71,7 +71,7 @@ typedef struct Color {
     uint8 a;
 } Color;
 
-Color GColor();
+Color GColor(uint8, uint8, uint8, uint8);
 uint32 GColorConvert(Color c);
 
 typedef struct GWin {

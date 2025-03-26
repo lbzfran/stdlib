@@ -205,6 +205,18 @@ MatrixMulS_(Matrix b, Matrix a, float x)
 }
 
 void
+MatrixDivS_(Matrix b, Matrix a, float x)
+{
+    Assert(a.rows == b.rows);
+    Assert(a.cols == b.cols);
+    for (size_t i = 0; i < a.rows; i++) {
+        for (size_t j = 0; j < a.cols; j++) {
+            MatrixAT(b, i, j) = MatrixAT(a, i, j) / x;
+        }
+    }
+}
+
+void
 MatrixDot_(Matrix c, Matrix a, Matrix b)
 {
     // NOTE(liam): implied that both matrix dimensions are the same.
