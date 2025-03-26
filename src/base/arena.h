@@ -72,13 +72,13 @@ void ArenaFreeCurrentBlock(Arena* arena);
 #define PushArray(arena, t, c) (t*)ArenaPush((arena),sizeof(t)*(c), alignof(t))
 #define PushStruct(arena, t) PushArray(arena, t, 1)
 #define PushSize(arena, s) ArenaPush((arena), (s), alignof(s))
-#define PushCopy(arena, s, src) ArenaCopy(s, src, ArenaPush(arena, s, alignof(s)))
+#define PushCopy(arena, s, src) ArenaCopy(s, src, PushSize((arena), (s)))
 
 // NOTE(liam): Set Alignment Manually.
 #define PushArrayAlign(arena, t, c, ...) (t*)ArenaPush((arena),sizeof(t)*(c), ## __VA_ARGS__)
 #define PushStructAlign(arena, t, ...) PushArray(arena, t, ## __VA_ARGS__)
 #define PushSizeAlign(arena, s, ...) ArenaPush((arena), (s), ## __VA_ARGS__)
-#define PushCopyAlign(arena, s, src, ...) ArenaCopy(s, src, ArenaPush(arena, s, ## __VA_ARGS__))
+#define PushCopyAlign(arena, s, src, ...) ArenaCopy(s, src, PushSizeAlign((arena), (s), ## __VA_ARGS__))
 void ArenaFillZero(memory_index size, void *ptr);
 
 uint64 ArenaGetPos(Arena*);

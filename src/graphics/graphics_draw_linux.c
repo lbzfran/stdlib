@@ -3,16 +3,6 @@
 
 #include "math/matrix.h"
 
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-
-typedef struct {
-    uint32Array vertices;
-    uint32Array faces;
-} Mesh3D;
-
 Color GColor(uint8 r, uint8 g, uint8 b, uint8 a)
 {
     // returns white.
@@ -181,4 +171,37 @@ void buildModelMatrix(Arena *arena, Matrix model, Row position, Row orientation,
     MatrixDot_(model, matTranslate, model);
 
     ArenaScratchFree(tmp);
+}
+
+void GDrawMesh(GWin *gw, Matrix model, Matrix view, Matrix projection,
+        Mesh3D mesh, uint32 color_pixel)
+{
+    float mV[16] = {0};
+    Matrix mvp = MatrixAlloc(4, 4, &mV);
+
+    MatrixDot_(mvp, projection, view);
+    MatrixDot_(mvp, mvp, model);
+
+    for (uint32 i = 0; i < mesh.faces.size; i += 3)
+    {
+        // TODO(liam): should be 3D, but what type?
+        Vector2u a = mesh.vertices.V[mesh.faces.V[i]];
+        Vector2u b = mesh.vertices.V[mesh.faces.V[i + 1]];
+        Vector2u c = mesh.vertices.V[mesh.faces.V[i + 2]];
+
+        // world to clip space: 4d -> 3d
+        // i.e., mvp * vec4(a); etc..
+
+        // clip to screen
+        // i.e, viewport and 3d
+        /*Vector2u screenA = ClipToScreen(...);*/
+
+        /*GDrawTriangle(*/
+        /*    gw,*/
+        /*    (Vector2u){screenA.x, screenA.y},*/
+        /*    (Vector2u){screenB.x, screenB.y},*/
+        /*    (Vector2u){screenC.x, screenC.y},*/
+        /*    color*/
+        /*);*/
+    }
 }

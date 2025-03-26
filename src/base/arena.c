@@ -112,9 +112,14 @@ ArenaPush(Arena* arena, memory_index sizeInit, memory_index alignment)
     return(res);
 }
 
+// TODO(liam): functionally broken; need to be checked
 void*
 ArenaCopy(memory_index size, void* src, void* dst)
 {
+    Assert(dst && "Destination Pointer cannot be NULL.");
+
+    if (src == NULL) { return(dst); }
+
     uint8* srcPos = (uint8*)src;
     uint8* dstPos = (uint8*)dst;
     while (size--)
@@ -134,7 +139,6 @@ SubArena(Arena* subArena, Arena* arena, memory_index size, memory_index alignmen
     subArena->pos = 0;
     subArena->tempCount = 0;
 }
-
 
 void
 ArenaPop(Arena* arena, memory_index size)

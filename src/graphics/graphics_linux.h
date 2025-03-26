@@ -10,6 +10,10 @@
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
 
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 typedef enum {
     GE_Null = 0,
     GE_Kill,
@@ -104,6 +108,12 @@ typedef struct GWin {
     bool32 alive;
 } GWin;
 
+typedef struct {
+    uint32Array vertices;
+    uint32Array faces;
+} Mesh3D;
+
+bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path);
 
 void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 event_masks);
 void GWinFree(GWin *gw);
