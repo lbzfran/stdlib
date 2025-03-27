@@ -34,6 +34,8 @@ int main(void)
         GDrawTriangle(&gw, (Vector2u){gw.mouseX, gw.mouseY}, (Vector2u){300, 200}, (Vector2u){600, 100}, GColorConvert(white));
     }
 
+    Vector3ArrayDump(mesh.vertices);
+
     GWinFree(&gw);
     return 0;
 }

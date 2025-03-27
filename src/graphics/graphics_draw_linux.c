@@ -3,6 +3,27 @@
 
 #include "math/matrix.h"
 
+void Vec3fArrayAppend(Arena *arena, Vec3fArray *a, Vector3f x)
+{
+	if (a->size + 1 >= a->capacity)
+	{
+		uint32 newCap = Max(a->capacity * 2, 32);
+		/*a->V = (uint32 *)PushCopy(arena, newCap, a->V);*/
+        Vector3f *newV = PushArray(arena, Vector3f, newCap);
+        if (a->V)
+        {
+            for (uint32 i = 0; i < a->size; i++)
+            {
+                newV[i] = a->V[i];
+            }
+        }
+
+        a->V = newV;
+		a->capacity = newCap;
+	}
+	a->V[a->size++] = x;
+}
+
 Color GColor(uint8 r, uint8 g, uint8 b, uint8 a)
 {
     // returns white.
@@ -88,9 +109,10 @@ void AssimpLoadMesh(Arena *arena, Mesh3D *meshTo, const struct aiMesh *meshFrom)
 	{
 		struct aiVector3D meshVertex = meshFrom->mVertices[i];
 
-		uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.x);
-		uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.y);
-		uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.z);
+		/*uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.x);*/
+		/*uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.y);*/
+		/*uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.z);*/
+        Vec3fArrayAppend(arena, &meshTo->vertices, (Vector3f){meshVertex.x, meshVertex.y, meshVertex.z});
 	}
 
 	for (uint32 i = 0; i < meshFrom->mNumFaces; i++)
@@ -177,7 +199,7 @@ void GDrawMesh(GWin *gw, Matrix model, Matrix view, Matrix projection,
         Mesh3D mesh, uint32 color_pixel)
 {
     float mV[16] = {0};
-    Matrix mvp = MatrixAlloc(4, 4, &mV);
+    Matrix mvp = MatrixAlloc(4, 4, mV);
 
     MatrixDot_(mvp, projection, view);
     MatrixDot_(mvp, mvp, model);
@@ -185,9 +207,9 @@ void GDrawMesh(GWin *gw, Matrix model, Matrix view, Matrix projection,
     for (uint32 i = 0; i < mesh.faces.size; i += 3)
     {
         // TODO(liam): should be 3D, but what type?
-        Vector2u a = mesh.vertices.V[mesh.faces.V[i]];
-        Vector2u b = mesh.vertices.V[mesh.faces.V[i + 1]];
-        Vector2u c = mesh.vertices.V[mesh.faces.V[i + 2]];
+        /*Vector3u a = {mesh.vertices.V[mesh.faces.V[i]]};*/
+        /*Vector3u b = mesh.vertices.V[mesh.faces.V[i + 1]];*/
+        /*Vector3u c = mesh.vertices.V[mesh.faces.V[i + 2]];*/
 
         // world to clip space: 4d -> 3d
         // i.e., mvp * vec4(a); etc..

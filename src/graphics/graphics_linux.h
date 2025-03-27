@@ -109,7 +109,7 @@ typedef struct GWin {
 } GWin;
 
 typedef struct {
-    uint32Array vertices;
+    Vec3fArray vertices;
     uint32Array faces;
 } Mesh3D;
 
