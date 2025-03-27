@@ -1,7 +1,7 @@
 
 #include "ds.h"
 
-void uint32ArrayAppend(Arena *arena, uint32Array *a, uint32 x)
+void ArrayU32Push(Arena *arena, ArrayUInt32 *a, uint32 x)
 {
 	if (a->size + 1 >= a->capacity)
 	{

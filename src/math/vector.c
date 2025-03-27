@@ -2,10 +2,10 @@
 #include "op.h"
 #include "vector.h"
 
-Vector2
-Vector2Add(Vector2 a, Vector2 b)
+Vector2f
+Vector2Add(Vector2f a, Vector2f b)
 {
-    Vector2 res = {
+    Vector2f res = {
         .x = a.x + b.x,
         .y = a.y + b.y
     };
@@ -13,10 +13,10 @@ Vector2Add(Vector2 a, Vector2 b)
     return(res);
 }
 
-Vector2
-Vector2Sub(Vector2 a, Vector2 b)
+Vector2f
+Vector2Sub(Vector2f a, Vector2f b)
 {
-    Vector2 res = {
+    Vector2f res = {
         .x = a.x - b.x,
         .y = a.y - b.y
     };
@@ -24,10 +24,10 @@ Vector2Sub(Vector2 a, Vector2 b)
     return(res);
 }
 
-Vector2
-Vector2Mul(Vector2 a, float32 b)
+Vector2f
+Vector2Mul(Vector2f a, float32 b)
 {
-    Vector2 res = {
+    Vector2f res = {
         .x = a.x * b,
         .y = a.y * b
     };
@@ -36,7 +36,7 @@ Vector2Mul(Vector2 a, float32 b)
 }
 
 float32
-Vector2Magnitude(Vector2 a)
+Vector2Magnitude(Vector2f a)
 {
     float32 res = SqrtFloat32(a.x * a.x + a.y * a.y);
 
@@ -45,7 +45,7 @@ Vector2Magnitude(Vector2 a)
 
 
 float32
-Vector2Dot(Vector2 a, Vector2 b)
+Vector2Dot(Vector2f a, Vector2f b)
 {
     float32 res = (a.x * b.x) + (a.y * b.y);
 
@@ -53,17 +53,17 @@ Vector2Dot(Vector2 a, Vector2 b)
 }
 
 float32
-Vector2Cross(Vector2 a, Vector2 b)
+Vector2Cross(Vector2f a, Vector2f b)
 {
     float32 res = (a.x * b.y) - (a.y * b.x);
 
     return(res);
 }
 
-Vector3
-Vector3Add(Vector3 a, Vector3 b)
+Vector3f
+Vector3Add(Vector3f a, Vector3f b)
 {
-    Vector3 res = {
+    Vector3f res = {
         .x = a.x + b.x,
         .y = a.y + b.y,
         .z = a.z + b.z
@@ -72,10 +72,10 @@ Vector3Add(Vector3 a, Vector3 b)
     return(res);
 }
 
-Vector3
-Vector3Sub(Vector3 a, Vector3 b)
+Vector3f
+Vector3Sub(Vector3f a, Vector3f b)
 {
-    Vector3 res = {
+    Vector3f res = {
         .x = a.x - b.x,
         .y = a.y - b.y,
         .z = a.z - b.z
@@ -84,10 +84,10 @@ Vector3Sub(Vector3 a, Vector3 b)
     return(res);
 }
 
-Vector3
-Vector3Mul(Vector3 a, float32 b)
+Vector3f
+Vector3Mul(Vector3f a, float32 b)
 {
-    Vector3 res = {
+    Vector3f res = {
         .x = a.x * b,
         .y = a.y * b,
         .z = a.z * b
@@ -97,7 +97,7 @@ Vector3Mul(Vector3 a, float32 b)
 }
 
 float32
-Vector3Dot(Vector3 a, Vector3 b)
+Vector3Dot(Vector3f a, Vector3f b)
 {
     float32 res = (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 
@@ -105,7 +105,7 @@ Vector3Dot(Vector3 a, Vector3 b)
 }
 
 float32
-Vector3Cross(Vector3 a, Vector3 b)
+Vector3Cross(Vector3f a, Vector3f b)
 {
     float32 res = (a.y * b.z - a.z * b.y) + (a.z * b.x - a.x * b.z) + (a.x * b.y - a.y * b.x);
 
@@ -113,9 +113,30 @@ Vector3Cross(Vector3 a, Vector3 b)
 }
 
 float32
-Vector3Magnitude(Vector3 a)
+Vector3Magnitude(Vector3f a)
 {
     float32 res = SqrtFloat32(a.x * a.x + a.y * a.y + a.z * a.z);
 
     return(res);
+}
+
+void ArrayVec3fPush(Arena *arena, ArrayVec3f *a, Vector3f x)
+{
+	if (a->size + 1 >= a->capacity)
+	{
+		uint32 newCap = Max(a->capacity * 2, 32);
+		/*a->V = (uint32 *)PushCopy(arena, newCap, a->V);*/
+        Vector3f *newV = PushArray(arena, Vector3f, newCap);
+        if (a->V)
+        {
+            for (uint32 i = 0; i < a->size; i++)
+            {
+                newV[i] = a->V[i];
+            }
+        }
+
+        a->V = newV;
+		a->capacity = newCap;
+	}
+	a->V[a->size++] = x;
 }

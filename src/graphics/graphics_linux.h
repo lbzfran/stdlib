@@ -4,7 +4,7 @@
 #include "base/base.h"
 #include "os/os.h"
 
-#include "vector.h"
+#include "math/math.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -75,8 +75,6 @@ typedef struct Color {
     uint8 a;
 } Color;
 
-Color GColor(uint8, uint8, uint8, uint8);
-uint32 GColorConvert(Color c);
 
 typedef struct GWin {
     uint32 width, height;
@@ -109,9 +107,12 @@ typedef struct GWin {
 } GWin;
 
 typedef struct {
-    Vec3fArray vertices;
-    uint32Array faces;
+    ArrayVec3f vertices;
+    ArrayU32 faces;
 } Mesh3D;
+
+Color GColor(uint8, uint8, uint8, uint8);
+uint32 GColorConvert(Color c);
 
 bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path);
 
@@ -122,14 +123,14 @@ void GWinFree(GWin *gw);
 // easy to use.
 GEvent GWinEvent(GWin *gw);
 
-// future potential:
-// GEvent GWinEvent(GWin *gw);
 
+// DRAWING UTILITIES
 void GWinClear(GWin *gw);
 
 void GWinWrite(GWin *gw, char *s, memory_index len);
 void GDrawPixel(GWin *gw, Vector2u pos, uint32 color_pixel);
 void GDrawLine(GWin *gw, Vector2u a, Vector2u b, uint32 color_pixel);
 void GDrawTriangle(GWin *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pixel);
+void GDrawMesh(GWin *gw, Matrix model, Matrix view, Matrix projection, Mesh3D mesh, uint32 color_pixel);
 
 #endif // GRAPHICS_LINUX_H

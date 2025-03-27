@@ -208,7 +208,7 @@ static uint32 GEGetKey(KeySym key)
     return result;
 }
 
-GEKeyMod GEGetState(uint32 state)
+static GEKeyMod GEGetState(uint32 state)
 {
     GEKeyMod mods = 0;
 

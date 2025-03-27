@@ -3,26 +3,6 @@
 
 #include "math/matrix.h"
 
-void Vec3fArrayAppend(Arena *arena, Vec3fArray *a, Vector3f x)
-{
-	if (a->size + 1 >= a->capacity)
-	{
-		uint32 newCap = Max(a->capacity * 2, 32);
-		/*a->V = (uint32 *)PushCopy(arena, newCap, a->V);*/
-        Vector3f *newV = PushArray(arena, Vector3f, newCap);
-        if (a->V)
-        {
-            for (uint32 i = 0; i < a->size; i++)
-            {
-                newV[i] = a->V[i];
-            }
-        }
-
-        a->V = newV;
-		a->capacity = newCap;
-	}
-	a->V[a->size++] = x;
-}
 
 Color GColor(uint8 r, uint8 g, uint8 b, uint8 a)
 {
@@ -112,16 +92,16 @@ void AssimpLoadMesh(Arena *arena, Mesh3D *meshTo, const struct aiMesh *meshFrom)
 		/*uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.x);*/
 		/*uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.y);*/
 		/*uint32ArrayAppend(arena, &meshTo->vertices, meshVertex.z);*/
-        Vec3fArrayAppend(arena, &meshTo->vertices, (Vector3f){meshVertex.x, meshVertex.y, meshVertex.z});
+        ArrayVec3fPush(arena, &meshTo->vertices, (Vector3f){meshVertex.x, meshVertex.y, meshVertex.z});
 	}
 
 	for (uint32 i = 0; i < meshFrom->mNumFaces; i++)
 	{
 		struct aiFace meshFace = meshFrom->mFaces[i];
 
-		uint32ArrayAppend(arena, &meshTo->faces, meshFace.mIndices[0]);
-		uint32ArrayAppend(arena, &meshTo->faces, meshFace.mIndices[1]);
-		uint32ArrayAppend(arena, &meshTo->faces, meshFace.mIndices[2]);
+		ArrayU32Push(arena, &meshTo->faces, meshFace.mIndices[0]);
+		ArrayU32Push(arena, &meshTo->faces, meshFace.mIndices[1]);
+		ArrayU32Push(arena, &meshTo->faces, meshFace.mIndices[2]);
 	}
 }
 
@@ -132,15 +112,17 @@ bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path)
 
     if (scene)
     {
+        // NOTE(liam): read was successful.
         result = true;
 
         // NOTE(liam): assume only one mesh for now.
+        printf("INFO: number of meshes found: %d\n", scene->mNumMeshes);
         const struct aiMesh *meshIn = scene->mMeshes[0];
         AssimpLoadMesh(arena, meshOut, meshIn);
     }
     else
     {
-        printf("Error loading model: %s\n", aiGetErrorString());
+        printf("ERROR: while loading model '%s'\n", aiGetErrorString());
     }
 
     aiReleaseImport(scene);
@@ -207,12 +189,13 @@ void GDrawMesh(GWin *gw, Matrix model, Matrix view, Matrix projection,
     for (uint32 i = 0; i < mesh.faces.size; i += 3)
     {
         // TODO(liam): should be 3D, but what type?
-        /*Vector3u a = {mesh.vertices.V[mesh.faces.V[i]]};*/
-        /*Vector3u b = mesh.vertices.V[mesh.faces.V[i + 1]];*/
-        /*Vector3u c = mesh.vertices.V[mesh.faces.V[i + 2]];*/
+        Vector3f localA = mesh.vertices.V[mesh.faces.V[i]];
+        Vector3f localB = mesh.vertices.V[mesh.faces.V[i + 1]];
+        Vector3f localC = mesh.vertices.V[mesh.faces.V[i + 2]];
 
         // world to clip space: 4d -> 3d
         // i.e., mvp * vec4(a); etc..
+        // Matrix worldA = MatrixDotVec4(arena, mvp, vec4(localA));
 
         // clip to screen
         // i.e, viewport and 3d
