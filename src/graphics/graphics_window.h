@@ -103,10 +103,16 @@ typedef struct GWindowInfo {
 void *GWindowInit(GCtx *context, GWindowInfo *info);
 void GWindowFree(void *win);
 
+typedef struct {
+    Mesh3D mesh;
+    Vector3f position;
+    Vector3f scale;
+    Vector3f orientation;
+} Object3D;
+
 // TODO(liam): abstract away XEvents and make event capture
 // easy to use.
 GEvent GWindowEvent(void *win);
 
 void GWindowClear(void *win);
-
 #endif

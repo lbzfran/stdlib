@@ -77,6 +77,3 @@ void GDrawTriangle(void *win, Vector2u a, Vector2u b, Vector2u c, uint32 color_p
     GDrawLine(win, c, a, color_pixel);
 }
 
-// TODO(liam): big todo
-// 3D Rendering
-
