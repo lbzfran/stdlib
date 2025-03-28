@@ -111,6 +111,13 @@ typedef struct {
     ArrayU32 faces;
 } Mesh3D;
 
+typedef struct {
+    Mesh3D mesh;
+    Vector3f position;
+    Vector3f scale;
+    Vector3f orientation;
+} Object3D;
+
 Color GColor(uint8, uint8, uint8, uint8);
 uint32 GColorConvert(Color c);
 
@@ -131,6 +138,9 @@ void GWinWrite(GWin *gw, char *s, memory_index len);
 void GDrawPixel(GWin *gw, Vector2u pos, uint32 color_pixel);
 void GDrawLine(GWin *gw, Vector2u a, Vector2u b, uint32 color_pixel);
 void GDrawTriangle(GWin *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pixel);
-void GDrawMesh(GWin *gw, Matrix model, Matrix view, Matrix projection, Mesh3D mesh, uint32 color_pixel);
+
+
+void buildModelMatrix(Arena *arena, Matrix model, Vector3f position, Vector3f orientation, Vector3f scale);
+void GDrawMesh(Arena *arena, GWin *gw, Matrix model, Matrix view, Matrix projection, Mesh3D mesh, uint32 color_pixel);
 
 #endif // GRAPHICS_LINUX_H

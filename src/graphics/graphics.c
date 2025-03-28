@@ -14,14 +14,6 @@ int main(void)
     Arena arena = {0};
     GWin gw = {0};
 
-    Mesh3D mesh = {0};
-
-    bool32 res = AssimpLoadAsset(&arena, &mesh, "./models/bunny.obj");
-    if (!res)
-    {
-        return res;
-    }
-
     GWinInit(&gw, NULL, screenWidth, screenHeight, 0);
 
     while (gw.alive)
