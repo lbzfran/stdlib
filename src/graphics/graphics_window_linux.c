@@ -1,37 +1,41 @@
 
-#include "graphics_linux.h"
+#include "graphics.h"
 #include "graphics_draw_linux.c"
 
-#include <X11/XKBlib.h>
 
-void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 event_masks)
+// X11 Context
+
+void *GWindowInit(GCtx *context, GWindowInfo info, uint32 event_masks)
+    // char *win_name, uint32 width, uint32 height, uint32 event_masks
 {
-    gw->alive = true;
-    gw->event = (XEvent){0};
+    GWindow *win = PushStruct(&ctx->arena, GWindow);
 
-    gw->keyMods = 0;
-    gw->width = width;
-    gw->height = height;
+    win->alive = true;
+    win->event = (XEvent){0};
 
-    gw->display = XOpenDisplay((char *)NULL);
-    gw->screen = DefaultScreen(gw->display);
+    win->keyMods = 0;
+    win->width = info.width;
+    win->height = info.height;
 
-    Display *display = gw->display;
-    int screen = gw->screen;
+    win->display = XOpenDisplay((char *)NULL);
+    win->screen = DefaultScreen(win->display);
+
+    Display *display = win->display;
+    int screen = win->screen;
 
 
-    gw->black = BlackPixel(display, screen);
-    gw->white = WhitePixel(display, screen);
+    win->black = BlackPixel(display, screen);
+    win->white = WhitePixel(display, screen);
 
-    gw->window = XCreateSimpleWindow(display, DefaultRootWindow(display),
-            0, 0, gw->width, gw->height, 2, gw->white, gw->black);
+    win->window = XCreateSimpleWindow(display, DefaultRootWindow(display),
+            0, 0, win->width, win->height, 2, win->white, win->black);
 
-    Window window = gw->window;
+    Window window = win->window;
 
-    char *actualName = win_name;
-    if (actualName == NULL)
+    char *actualTitle = info->title;
+    if (actualTitle == NULL)
     {
-        actualName = "generic window";
+        actualTitle = "generic window";
     }
 
     if (event_masks == 0)
@@ -46,7 +50,7 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
     }
 
 
-    XSetStandardProperties(display, window, actualName, "hi", None, NULL, 0, NULL);
+    XSetStandardProperties(display, window, actualName, "", None, NULL, 0, NULL);
 
     // defaults
     XSelectInput(display, window, event_masks);
@@ -55,12 +59,12 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
     XWindowAttributes attr = {0};
     XGetWindowAttributes(display, window, &attr);
 
-    gw->gc = XCreateGC(display, window, 0, NULL);
+    win->gc = XCreateGC(display, window, 0, NULL);
 
-    gw->wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(display, window, &gw->wm_delete_window, 1);
+    win->wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window, &win->wm_delete_window, 1);
 
-    GWinFont(gw, "6x13");
+    GWindowFont(win, "6x13");
 
     XSizeHints *win_size_hints = XAllocSizeHints();
     if (!win_size_hints)
@@ -74,8 +78,8 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
 
     win_size_hints->min_width = 300;
     win_size_hints->min_height = 200;
-    win_size_hints->base_width = gw->width;
-    win_size_hints->base_height = gw->height;
+    win_size_hints->base_width = win->width;
+    win_size_hints->base_height = win->height;
 
     XSetWMNormalHints(display, window, win_size_hints);
     XFree(win_size_hints);
@@ -88,42 +92,44 @@ void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 even
         fprintf(stderr, "INFO: Autorepeat not supported.\n");
     }
 
-    gw->colormap = DefaultColormap(display, screen);
+    win->colormap = DefaultColormap(display, screen);
 
     XClearWindow(display, window);
 
-    XSetForeground(display, gw->gc, gw->white);
-    XSetBackground(display, gw->gc, gw->black);
+    XSetForeground(display, win->gc, win->white);
+    XSetBackground(display, win->gc, win->black);
 
     // NOTE(liam): like XMapWindow but also raises to top of stack.
     XMapRaised(display, window);
     XFlush(display);
+
+    return win;
 }
 
-void GWinFree(GWin *gw)
+void GWindowFree(void *win)
 {
-    // NOTE(liam): gw should not be referred to after free,
+    // NOTE(liam): win should not be referred to after free,
     // unless GWindowInit is called on it again.
-    if (gw->font)
+    if (win->font)
     {
-        XFreeFont(gw->display, gw->font);
+        XFreeFont(win->display, win->font);
     }
-    if (gw->colormap)
+    if (win->colormap)
     {
-        XFreeColormap(gw->display, gw->colormap);
+        XFreeColormap(win->display, win->colormap);
     }
-    if (gw->gc)
+    if (win->gc)
     {
-        XFreeGC(gw->display, gw->gc);
+        XFreeGC(win->display, win->gc);
     }
-    XDestroyWindow(gw->display, gw->window);
-    XCloseDisplay(gw->display);
+    XDestroyWindow(win->display, win->window);
+    XCloseDisplay(win->display);
 }
 
 
-void GWinClear(GWin *gw)
+void GWindowClear(void *win)
 {
-    XClearWindow(gw->display, gw->window);
+    XClearWindow(win->display, win->window);
 }
 
 static uint32 GEGetKey(KeySym key)
@@ -225,13 +231,13 @@ static GEKeyMod GEGetState(uint32 state)
 
 }
 
-GEvent GWinEvent(GWin *gw)
+GEvent GWindowEvent(void *win)
 {
 
     GEvent result = GE_Null;
-    gw->event = (XEvent){0};
+    win->event = (XEvent){0};
 
-    XNextEvent(gw->display, &gw->event);
+    XNextEvent(win->display, &win->event);
 
     // NOTE(liam): handle discarding events.
     // current no use for it but
@@ -243,89 +249,89 @@ GEvent GWinEvent(GWin *gw)
     /*    discard_flag = false;*/
     /*    return result;*/
     /*}*/
-    /*else if (XEventsQueued(gw->display, QueuedAfterReading))*/
+    /*else if (XEventsQueued(win->display, QueuedAfterReading))*/
     /*{*/
-    /*    XPeekEvent(gw->display, &next_event);*/
+    /*    XPeekEvent(win->display, &next_event);*/
     /*}*/
 
-    switch (gw->event.type)
+    switch (win->event.type)
     {
         case ClientMessage:
         {
-            if ((Atom)gw->event.xclient.data.l[0] == gw->wm_delete_window)
+            if ((Atom)win->event.xclient.data.l[0] == win->wm_delete_window)
             {
-                gw->alive = false;
+                win->alive = false;
                 result = GE_Kill;
             }
         } break;
         // NOTE(liam): I won't really care about exposure for any of my apps.
         /*case Expose:*/
         /*{*/
-        /*    if (gw->event.xexpose.count == 0)*/
+        /*    if (win->event.xexpose.count == 0)*/
         /*    {*/
         /*    }*/
         /*} break;*/
         case ConfigureNotify:
         {
-            XConfigureEvent xce = gw->event.xconfigure;
+            XConfigureEvent xce = win->event.xconfigure;
 
-            if ((xce.width <= gw->width && xce.width >= 400) &&
-                    (xce.height <= gw->height && xce.height >= 300))
+            if ((xce.width <= win->width && xce.width >= 400) &&
+                    (xce.height <= win->height && xce.height >= 300))
             {
-                gw->width = xce.width;
-                gw->height = xce.height;
-                /*GWinDraw(gw);*/
+                win->width = xce.width;
+                win->height = xce.height;
+                /*GWinDraw(win);*/
             }
             result = GE_Notify;
         } break;
         case KeyPress:
         {
-            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
+            KeySym key = XLookupKeysym(&win->event.xkey, 0);
 
             // TODO(liam): record key presses.
-            GEKeyMod mods = GEGetState(gw->event.xkey.state);
+            GEKeyMod mods = GEGetState(win->event.xkey.state);
 
             // TODO(liam): apply the mod to key.
-            gw->keyDown = GEGetKey(key);
-            gw->keyMods = mods;
+            win->keyDown = GEGetKey(key);
+            win->keyMods = mods;
 
-            if (gw->keyDown)
+            if (win->keyDown)
             {
-                printf("key down: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyDown, key, gw->keyMods);
+                printf("key down: '%d' (actual: '%ld') with mod(s) '%d'.\n", win->keyDown, key, win->keyMods);
             }
 
             result = GE_KeyDown;
         } break;
         case KeyRelease:
         {
-            KeySym key = XLookupKeysym(&gw->event.xkey, 0);
+            KeySym key = XLookupKeysym(&win->event.xkey, 0);
 
-            GEKeyMod mods = GEGetState(gw->event.xkey.state);
+            GEKeyMod mods = GEGetState(win->event.xkey.state);
 
-            gw->keyReleased = GEGetKey(key);
-            gw->keyMods = mods;
+            win->keyReleased = GEGetKey(key);
+            win->keyMods = mods;
 
-            if (gw->keyReleased)
+            if (win->keyReleased)
             {
-                printf("key released: '%d' (actual: '%ld') with mod(s) '%d'.\n", gw->keyReleased, key, gw->keyMods);
+                printf("key released: '%d' (actual: '%ld') with mod(s) '%d'.\n", win->keyReleased, key, win->keyMods);
             }
 
             result = GE_KeyRelease;
         } break;
         case ButtonPress:
         {
-            uint8 mouseKey = gw->event.xbutton.button;
-	    gw->mouseKey = mouseKey;
+            uint8 mouseKey = win->event.xbutton.button;
+	    win->mouseKey = mouseKey;
 
-	    printf("Mouse pressed: '%d' at (%i, %i)\n", gw->mouseKey, gw->event.xbutton.x, gw->event.xbutton.y);
+	    printf("Mouse pressed: '%d' at (%i, %i)\n", win->mouseKey, win->event.xbutton.x, win->event.xbutton.y);
 
 
             result = GE_MousePress;
         } break;
         case MotionNotify:
 	{
-	    gw->mouseX = gw->event.xmotion.x;
-	    gw->mouseY = gw->event.xmotion.y;
+	    win->mouseX = win->event.xmotion.x;
+	    win->mouseY = win->event.xmotion.y;
 
 	    result = GE_MouseMove;
 	} break;

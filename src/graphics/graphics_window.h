@@ -1,18 +1,9 @@
-#ifndef GRAPHICS_LINUX_H
-#define GRAPHICS_LINUX_H
+#ifndef GRAPHICS_WINDOW_H
+#define GRAPHICS_WINDOW_H
 
 #include "base/base.h"
 #include "os/os.h"
-
 #include "math/math.h"
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xos.h>
-
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 typedef enum {
     GE_Null = 0,
@@ -70,67 +61,52 @@ typedef enum {
     GE_Mouse_ScrollDown
 } GEMouse;
 
-typedef struct Color {
-    uint8 r, g, b;
-    uint8 a;
-} Color;
 
+// TODO(liam): get this out of here
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xos.h>
+#include <X11/XKBlib.h>
 
-typedef struct GWin {
+typedef struct GWin_X11 {
+    char *title;
     uint32 width, height;
+    uint32 x, y;
     uint32 black, white;
 
-    uint8 flags[256];
-
-    Display *display;
-    int screen;
-    Window root, window;
-    GC gc;
-    /*Visual *visual;*/
-    XVisualInfo *visual;
-    XFontStruct *font;
-
-    XEvent event;
     uint32 keyDown;
     uint32 keyReleased;
     uint32 keyMods;
     GEMouse mouseKey;
     uint32 mouseX, mouseY;
 
+    Display *display;
+    int screen;
+    Window root, window;
+    GC gc;
+    XVisualInfo *visual;
+    XFontStruct *font;
+
+    XEvent event;
+
     Colormap colormap;
-
-    uint32 fontHeight;
-    uint32 screenRows, screenCols;
-
     Atom wm_delete_window;
     bool32 alive;
-} GWin;
+} GWindow;
 
-typedef struct {
-    ArrayVec3f vertices;
-    ArrayU32 faces;
-} Mesh3D;
+// platform-indepdendent, user provided
+typedef struct GWindowInfo {
+    char *title;
+    uint32 width, height;
+} GWindowInfo;
 
-Color GColor(uint8, uint8, uint8, uint8);
-uint32 GColorConvert(Color c);
-
-bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path);
-
-void GWinInit(GWin *gw, char *win_name, uint32 width, uint32 height, uint32 event_masks);
-void GWinFree(GWin *gw);
+void *GWindowInit(GCtx *context, GWindowInfo *info);
+void GWindowFree(void *win);
 
 // TODO(liam): abstract away XEvents and make event capture
 // easy to use.
-GEvent GWinEvent(GWin *gw);
+GEvent GWindowEvent(void *win);
 
+void GWindowClear(void *win);
 
-// DRAWING UTILITIES
-void GWinClear(GWin *gw);
-
-void GWinWrite(GWin *gw, char *s, memory_index len);
-void GDrawPixel(GWin *gw, Vector2u pos, uint32 color_pixel);
-void GDrawLine(GWin *gw, Vector2u a, Vector2u b, uint32 color_pixel);
-void GDrawTriangle(GWin *gw, Vector2u a, Vector2u b, Vector2u c, uint32 color_pixel);
-void GDrawMesh(GWin *gw, Matrix model, Matrix view, Matrix projection, Mesh3D mesh, uint32 color_pixel);
-
-#endif // GRAPHICS_LINUX_H
+#endif

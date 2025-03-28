@@ -12,7 +12,7 @@ BUILD_PLATFORM="${1:-"linux"}"
 LAYER_BASE_LINUX="$SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c $SRC/base/ds.c"
 
 LAYER_OS_LINUX="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c $SRC/os/term_linux.c $SRC/os/shell_linux.c"
-LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics_linux.c"
+LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics.c $SRC/graphics/graphics_window_linux.c $SRC/graphics/graphics_draw_linux.c"
 
 LAYER_BASE_WIN32="$SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_win32.c $SRC/base/random.c"
 LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c $SRC/os/term_win32.c $SRC/os/unistd_win32.c"
@@ -55,7 +55,7 @@ elif [ "$BUILD_PLATFORM" = "linux" ]; then
     fi
 
     if [[ $BUILD_CORES == *"graphics"* ]]; then
-        $CC $FLAGS -fsanitize=address -lX11 -lXext -lassimp -o ./build/gp $SRC/graphics/graphics.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX $LAYER_MATH
+        $CC $FLAGS -fsanitize=address -lX11 -lXext -lassimp -o ./build/gp $SRC/graphics/gp.c $LAYER_BASE_LINUX $LAYER_OS_LINUX $LAYER_GRAPHICS_LINUX $LAYER_MATH
     fi
 
     if [[ $BUILD_CORES == *"term"* ]]; then
