@@ -15,6 +15,13 @@ typedef struct {
     ArrayU32 faces;
 } Mesh3D;
 
+typedef struct {
+    Mesh3D mesh;
+    Vector3f position;
+    Vector3f scale;
+    Vector3f orientation;
+} Object3D;
+
 bool32 AssimpLoadAsset(Arena *arena, Mesh3D *meshOut, const char *path);
 
 // DRAWING UTILITIES

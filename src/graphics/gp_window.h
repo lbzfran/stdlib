@@ -4,18 +4,10 @@
 #include "base/base.h"
 #include "os/os.h"
 #include "math/math.h"
+#include "gp_ctx.h"
 
-typedef enum {
-    GE_Null = 0,
-    GE_Kill,
-    GE_Notify,
-    GE_KeyDown,
-    GE_KeyRelease,
-    GE_MousePress,
-    GE_MouseRelease,
-    GE_MouseMove,
-} GEvent;
-
+/* ----------------------- */
+/* INPUT */
 typedef enum {
     GE_Mod_Shift     = (1 << 0),
     GE_Mod_Ctrl      = (1 << 1),
@@ -33,6 +25,8 @@ typedef enum {
     GE_Mod_CapsLock  = (1 << 7),
 } GEKeyMod;
 
+// the nice thing is, between Null and Escape,
+// all the possible keys can be read as char.
 typedef enum {
     GE_Key_Null = 0,
     GE_Key_Escape = 256,
@@ -60,19 +54,29 @@ typedef enum {
     GE_Mouse_ScrollUp,
     GE_Mouse_ScrollDown
 } GEMouse;
+/* ----------------------- */
 
+typedef enum {
+    GE_Null         = (1 << 0),
+    GE_Kill         = (1 << 1),
+    GE_Notify       = (1 << 2),
+    GE_KeyDown      = (1 << 3),
+    GE_KeyRelease   = (1 << 4),
+    GE_MousePress   = (1 << 5),
+    GE_MouseRelease = (1 << 6),
+    GE_MouseMove    = (1 << 7),
+} GEvent;
 
+// NOTE(liam): window creation should be separate.
 // TODO(liam): get this out of here
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xos.h>
-#include <X11/XKBlib.h>
 
-typedef struct GWin_X11 {
+typedef void* GInner;
+typedef struct GWindow {
+    bool32 alive;
+
     char *title;
     uint32 width, height;
     uint32 x, y;
-    uint32 black, white;
 
     uint32 keyDown;
     uint32 keyReleased;
@@ -80,18 +84,8 @@ typedef struct GWin_X11 {
     GEMouse mouseKey;
     uint32 mouseX, mouseY;
 
-    Display *display;
-    int screen;
-    Window root, window;
-    GC gc;
-    XVisualInfo *visual;
-    XFontStruct *font;
-
-    XEvent event;
-
-    Colormap colormap;
-    Atom wm_delete_window;
-    bool32 alive;
+    // OS SPECIFIC window handle
+    GInner handler;
 } GWindow;
 
 // platform-indepdendent, user provided
@@ -100,19 +94,15 @@ typedef struct GWindowInfo {
     uint32 width, height;
 } GWindowInfo;
 
-void *GWindowInit(GCtx *context, GWindowInfo *info);
-void GWindowFree(void *win);
-
-typedef struct {
-    Mesh3D mesh;
-    Vector3f position;
-    Vector3f scale;
-    Vector3f orientation;
-} Object3D;
+GWindow *GWindowInit(GCtx *context, GWindowInfo *info, uint32 event_masks);
+void GWindowFree(GWindow *win);
 
 // TODO(liam): abstract away XEvents and make event capture
 // easy to use.
-GEvent GWindowEvent(void *win);
+uint32 GWindowEvent(GWindow *win);
 
-void GWindowClear(void *win);
+// NOTE(liam): idk if this should be here tbh
+void GWindowFont(GWindow *win, char *font_name);
+
+void GWindowClear(GWindow *win);
 #endif

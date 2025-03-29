@@ -1,5 +1,5 @@
 
-#include "graphics.h"
+#include "gp_ctx.h"
 
 void GCtxFree(GCtx *context)
 {

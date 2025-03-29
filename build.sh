@@ -12,7 +12,7 @@ BUILD_PLATFORM="${1:-"linux"}"
 LAYER_BASE_LINUX="$SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_linux.c $SRC/base/random.c $SRC/base/ds.c"
 
 LAYER_OS_LINUX="$SRC/os/shared_linux.c $SRC/os/file_linux.c $SRC/os/dt_linux.c $SRC/os/term_linux.c $SRC/os/shell_linux.c"
-LAYER_GRAPHICS_LINUX="$SRC/graphics/graphics.c $SRC/graphics/graphics_window_linux.c $SRC/graphics/graphics_draw_linux.c"
+LAYER_GRAPHICS_LINUX="$SRC/graphics/gp_ctx.c $SRC/graphics/gp_window_linux.c $SRC/graphics/gp_draw_linux.c"
 
 LAYER_BASE_WIN32="$SRC/base/string.c $SRC/base/arena.c $SRC/os/memory_win32.c $SRC/base/random.c"
 LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c $SRC/os/term_win32.c $SRC/os/unistd_win32.c"
@@ -20,7 +20,7 @@ LAYER_OS_WIN32="$SRC/os/shared_win32.c $SRC/os/file_win32.c $SRC/os/dt_win32.c $
 LAYER_MATH="$SRC/math/vector.c $SRC/math/op.c $SRC/math/matrix.c"
 
 CC=gcc
-INC="-I./src"
+INC="-I./src -I./include"
 C11FLAGS="-D_DEFAULT_SOURCE -D_BSD_SOURCE -D_GNU_SOURCE -std=c11"
 CFLAGS="-Wall -g -fanalyzer"
 LD="-lm"
