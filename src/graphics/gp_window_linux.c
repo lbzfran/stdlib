@@ -51,7 +51,7 @@ GWindow *GWindowInit(GCtx *ctx, GWindowInfo *info, uint32 event_masks)
 
     if (event_masks == 0)
     {
-        event_masks = ButtonPressMask | KeyPressMask |
+        event_masks = ButtonPressMask | KeyPressMask | ExposureMask |
         StructureNotifyMask | PointerMotionMask | KeyReleaseMask;
     }
     else
@@ -62,6 +62,7 @@ GWindow *GWindowInit(GCtx *ctx, GWindowInfo *info, uint32 event_masks)
     handler->event_masks = event_masks;
 
     XSetStandardProperties(display, window, win->title, "", None, NULL, 0, NULL);
+    XSync(display, False);
 
     // defaults
     XSelectInput(display, window, event_masks);
@@ -249,118 +250,134 @@ static GEKeyMod GEGetState(uint32 state)
 
 }
 
+uint32 GWindowEvent_(GWindow *win, GInner_X11 *handler);
+
 uint32 GWindowEvent(GWindow *win)
 {
     GInner_X11 *handler = (GInner_X11 *)win->handler;
-
+    int x11_fd = ConnectionNumber(handler->display);
     uint32 result = GE_Null;
-    handler->event = (XEvent){0};
 
-    /*XNextEvent(handler->display, &handler->event);*/
+    fd_set in_fds;
+    struct timeval tv;
 
-    // NOTE(liam): handle discarding events.
-    // current no use for it but
-    // i might find something for it in the future.
-    /*XEvent next_event = (XEvent){0};*/
-    /*static bool32 discard_flag = false;*/
-    /*if (discard_flag)*/
-    /*{*/
-    /*    discard_flag = false;*/
-    /*    return result;*/
-    /*}*/
-    /*else if (XEventsQueued(win->display, QueuedAfterReading))*/
-    /*{*/
-    /*    XPeekEvent(win->display, &next_event);*/
-    /*}*/
+    FD_ZERO(&in_fds);
+    FD_SET(x11_fd, &in_fds);
 
-    if (XCheckTypedWindowEvent(handler->display, handler->window, ClientMessage, &handler->event))
+    // TODO(liam): idk what's an optimal # for this..
+    // tv.tv_usec = 500000; // 0.5s
+    tv.tv_usec = 10000; // 0.01s
+    tv.tv_sec = 0;
+
+    int num_ready_fds = select(x11_fd + 1, &in_fds, NULL, NULL, &tv);
+    if (num_ready_fds > 0)
     {
-        if ((Atom)handler->event.xclient.data.l[0] == handler->wm_delete_window)
-        {
-            win->alive = false;
-            result |= GE_Kill;
-        }
+        // event received
+    }
+    else if (num_ready_fds == 0)
+    {
+        // timer fired
     }
     else
     {
-        while (XCheckWindowEvent(handler->display, handler->window, handler->event_masks, &handler->event))
+        // error
+    }
+
+    while (XPending(handler->display))
+    {
+        result |= GWindowEvent_(win, handler);
+    }
+
+    return result;
+}
+
+uint32 GWindowEvent_(GWindow *win, GInner_X11 *handler)
+{
+    uint32 result = GE_Null;
+    handler->event = (XEvent){0};
+
+    XNextEvent(handler->display, &handler->event);
+    if (handler->event.type)
+    {
+        switch (handler->event.type)
         {
-            switch (handler->event.type)
+            // NOTE(liam): I won't really care about exposure for any of my apps.
+            /*case Expose:*/
+            /*{*/
+            /*    if (win->event.xexpose.count == 0)*/
+            /*    {*/
+            /*    }*/
+            /*} break;*/
+            case ClientMessage:
             {
-                // NOTE(liam): I won't really care about exposure for any of my apps.
-                /*case Expose:*/
-                /*{*/
-                /*    if (win->event.xexpose.count == 0)*/
-                /*    {*/
-                /*    }*/
-                /*} break;*/
-                case ConfigureNotify:
+                win->alive = false;
+                result = GE_Kill;
+            } break;
+            case ConfigureNotify:
+                {
+                    XConfigureEvent xce = handler->event.xconfigure;
+
+                    if ((xce.width <= win->width && xce.width >= 400) &&
+                            (xce.height <= win->height && xce.height >= 300))
                     {
-                        XConfigureEvent xce = handler->event.xconfigure;
+                        win->width = xce.width;
+                        win->height = xce.height;
+                    }
+                    result = GE_Notify;
+                } break;
+            case KeyPress:
+                {
+                    KeySym key = XLookupKeysym(&handler->event.xkey, 0);
 
-                        if ((xce.width <= win->width && xce.width >= 400) &&
-                                (xce.height <= win->height && xce.height >= 300))
-                        {
-                            win->width = xce.width;
-                            win->height = xce.height;
-                            /*GWinDraw(win);*/
-                        }
-                        result |= GE_Notify;
-                    } break;
-                case KeyPress:
+                    // TODO(liam): record key presses.
+                    GEKeyMod mods = GEGetState(handler->event.xkey.state);
+
+                    // TODO(liam): apply the mod to key.
+                    win->keyDown = GEGetKey(key);
+                    win->keyMods = mods;
+
+                    if (win->keyDown)
                     {
-                        KeySym key = XLookupKeysym(&handler->event.xkey, 0);
+                        printf("key down: '%d' (actual: '%ld') with mod(s) '%d'.\n", win->keyDown, key, win->keyMods);
+                    }
 
-                        // TODO(liam): record key presses.
-                        GEKeyMod mods = GEGetState(handler->event.xkey.state);
+                    result = GE_KeyDown;
+                } break;
+            case KeyRelease:
+                {
+                    KeySym key = XLookupKeysym(&handler->event.xkey, 0);
 
-                        // TODO(liam): apply the mod to key.
-                        win->keyDown = GEGetKey(key);
-                        win->keyMods = mods;
+                    GEKeyMod mods = GEGetState(handler->event.xkey.state);
 
-                        if (win->keyDown)
-                        {
-                            printf("key down: '%d' (actual: '%ld') with mod(s) '%d'.\n", win->keyDown, key, win->keyMods);
-                        }
+                    win->keyReleased = GEGetKey(key);
+                    win->keyMods = mods;
 
-                        result |= GE_KeyDown;
-                    } break;
-                case KeyRelease:
+                    if (win->keyReleased)
                     {
-                        KeySym key = XLookupKeysym(&handler->event.xkey, 0);
+                        printf("key released: '%d' (actual: '%ld') with mod(s) '%d'.\n", win->keyReleased, key, win->keyMods);
+                    }
 
-                        GEKeyMod mods = GEGetState(handler->event.xkey.state);
+                    result = GE_KeyRelease;
+                } break;
+            case ButtonPress:
+                {
+                    uint8 mouseKey = handler->event.xbutton.button;
+                    win->mouseKey = mouseKey;
 
-                        win->keyReleased = GEGetKey(key);
-                        win->keyMods = mods;
-
-                        if (win->keyReleased)
-                        {
-                            printf("key released: '%d' (actual: '%ld') with mod(s) '%d'.\n", win->keyReleased, key, win->keyMods);
-                        }
-
-                        result |= GE_KeyRelease;
-                    } break;
-                case ButtonPress:
-                    {
-                        uint8 mouseKey = handler->event.xbutton.button;
-                        win->mouseKey = mouseKey;
-
-                        printf("Mouse pressed: '%d' at (%i, %i)\n", win->mouseKey, handler->event.xbutton.x, handler->event.xbutton.y);
+                    printf("Mouse pressed: '%d' at (%i, %i)\n", win->mouseKey, handler->event.xbutton.x, handler->event.xbutton.y);
 
 
-                        result |= GE_MousePress;
-                    } break;
-                case MotionNotify:
-                    {
-                        win->mouseX = handler->event.xmotion.x;
-                        win->mouseY = handler->event.xmotion.y;
+                    result = GE_MousePress;
+                } break;
+            case MotionNotify:
+                {
+                    win->mouseX = handler->event.xmotion.x;
+                    win->mouseY = handler->event.xmotion.y;
 
-                        result |= GE_MouseMove;
-                    } break;
-                default:
-                    {} break;
-            }
+                    result = GE_MouseMove;
+                } break;
+            default:
+                {} break;
         }
     }
 

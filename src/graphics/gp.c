@@ -33,6 +33,7 @@ int main(void)
         650, 700, 750,
     };
     uint8 capturePoint = 0;
+    uint32 cooldown = 0;
 
     while (win->alive)
     {
@@ -50,29 +51,35 @@ int main(void)
         {
             triPoints[capturePoint % 3] = (Vector2u){win->mouseX, win->mouseY};
 
-            /*capturePoint++;*/
-            /*if (capturePoint % 3 == 0)*/
-            /*{*/
-            /*    capturePoint = 0;*/
-            /*}*/
-            /*triPoints[capturePoint % 3] = (Vector2u){ pointValues[RandomNextInt(&series) % 12], pointValues[RandomNextInt(&series) % 12]};*/
-
         }
-        /*colors[0]++;*/
-        /*if (colors[0] > 250)*/
-        /*{*/
-        /*    colors[0] = 0;*/
-        /*}*/
-        /*colors[1] += 2;*/
-        /*if (colors[1] > 250)*/
-        /*{*/
-        /*    colors[1] = 0;*/
-        /*}*/
-        /*colors[2] += 3;*/
-        /*if (colors[2] > 250)*/
-        /*{*/
-        /*    colors[2] = 0;*/
-        /*}*/
+        if (!cooldown) {
+            capturePoint++;
+            if (capturePoint % 3 == 0)
+            {
+                capturePoint = 0;
+            }
+            cooldown = 30;
+        }
+        else {
+            cooldown--;
+        }
+        colors[0]++;
+        if (colors[0] > 250)
+        {
+            colors[0] = 0;
+        }
+        colors[1] += 2;
+        if (colors[1] > 250)
+        {
+            colors[1] = 0;
+        }
+        colors[2] += 3;
+        if (colors[2] > 250)
+        {
+            colors[2] = 0;
+        }
+
+        printf("framing\n");
 
         GWindowClear(win);
 
